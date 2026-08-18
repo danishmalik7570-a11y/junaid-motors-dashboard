@@ -59,10 +59,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cardealer.wsgi.application'
 
+import os
+import shutil
+
+if os.environ.get('VERCEL'):
+    db_path = '/tmp/db.sqlite3'
+    original_db = BASE_DIR / 'db.sqlite3'
+    # Copy the seed database to /tmp if it's not already there
+    if not os.path.exists(db_path) and os.path.exists(original_db):
+        shutil.copy2(original_db, db_path)
+        # Give write permissions to the copied database file
+        os.chmod(db_path, 0o666)
+else:
+    db_path = BASE_DIR / 'db.sqlite3'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': db_path,
     }
 }
 
