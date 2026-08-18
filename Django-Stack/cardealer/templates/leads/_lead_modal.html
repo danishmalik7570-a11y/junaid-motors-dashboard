@@ -1,0 +1,37 @@
+{% load humanize %}
+<div class="modal fade" id="leadModal{{ lead.pk }}" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background:var(--card);border:1px solid var(--border);">
+      <div class="modal-header" style="border-color:var(--border);">
+        <h5 class="modal-title">{{ lead.name }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-4"><div style="color:var(--text-muted);font-size:0.75rem;">PHONE</div><div class="fw-bold">{{ lead.phone }}</div></div>
+          <div class="col-md-4"><div style="color:var(--text-muted);font-size:0.75rem;">INTERESTED IN</div><div class="fw-bold">{{ lead.interested_car }}</div></div>
+          <div class="col-md-4"><div style="color:var(--text-muted);font-size:0.75rem;">BUDGET</div><div class="fw-bold">{% if lead.budget %}Rs.{{ lead.budget|floatformat:0|intcomma }}{% else %}Not specified{% endif %}</div></div>
+          <div class="col-md-4"><div style="color:var(--text-muted);font-size:0.75rem;">SOURCE</div><span class="badge badge-{{ lead.source }}">{{ lead.get_source_display }}</span></div>
+          <div class="col-md-4"><div style="color:var(--text-muted);font-size:0.75rem;">NEXT FOLLOWUP</div><div>{{ lead.next_followup|date:"d M Y"|default:"Not set" }}</div></div>
+          <div class="col-md-4"><div style="color:var(--text-muted);font-size:0.75rem;">CREATED</div><div>{{ lead.created_at|date:"d M Y" }}</div></div>
+          {% if lead.notes %}<div class="col-12"><div style="color:var(--text-muted);font-size:0.75rem;">NOTES</div><div>{{ lead.notes }}</div></div>{% endif %}
+        </div>
+        <form method="post" action="{% url 'update_lead_status' lead.pk %}">
+          {% csrf_token %}
+          <label class="form-label">Update Status</label>
+          <div class="d-flex gap-2">
+            <select name="status" class="form-select">
+              <option value="new" {% if lead.status == 'new' %}selected{% endif %}>New</option>
+              <option value="followup" {% if lead.status == 'followup' %}selected{% endif %}>Follow-up</option>
+              <option value="testdrive" {% if lead.status == 'testdrive' %}selected{% endif %}>Test Drive</option>
+              <option value="negotiating" {% if lead.status == 'negotiating' %}selected{% endif %}>Negotiating</option>
+              <option value="converted" {% if lead.status == 'converted' %}selected{% endif %}>Converted</option>
+              <option value="lost" {% if lead.status == 'lost' %}selected{% endif %}>Lost</option>
+            </select>
+            <button type="submit" class="btn-amber">Update</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

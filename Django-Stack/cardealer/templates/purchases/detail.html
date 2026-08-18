@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Purchase Detail — Junaid Motors{% endblock %}
+{% block page_title %}Purchase Detail{% endblock %}
+
+{% block content %}
+<a href="{% url 'purchase_list' %}" class="btn-ghost mb-4"><i class="bi bi-arrow-left me-1"></i>Back</a>
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-cart3 me-2 text-amber"></i>Purchase Record</div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <tbody>
+            <tr><td style="color:var(--text-muted);">Car</td><td class="fw-bold">{{ purchase.car.name }} ({{ purchase.car.model_year }})</td></tr>
+            <tr><td style="color:var(--text-muted);">Seller</td><td>{{ purchase.seller_name }}</td></tr>
+            <tr><td style="color:var(--text-muted);">Seller Phone</td><td>{{ purchase.seller_phone }}</td></tr>
+            <tr><td style="color:var(--text-muted);">Purchase Price</td><td class="fw-bold">Rs.{{ purchase.purchase_price|floatformat:0|intcomma }}</td></tr>
+            <tr><td style="color:var(--text-muted);">Commission</td><td>Rs.{{ purchase.dealer_commission|floatformat:0|intcomma }}</td></tr>
+            <tr><td style="color:var(--text-muted);">Net Cost</td><td class="fw-bold text-amber">Rs.{{ purchase.net_cost|floatformat:0|intcomma }}</td></tr>
+            <tr><td style="color:var(--text-muted);">Date</td><td>{{ purchase.purchase_date|date:"d M Y" }}</td></tr>
+            {% if purchase.notes %}<tr><td style="color:var(--text-muted);">Notes</td><td>{{ purchase.notes }}</td></tr>{% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

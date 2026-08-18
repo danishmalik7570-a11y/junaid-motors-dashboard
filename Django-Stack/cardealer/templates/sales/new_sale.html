@@ -1,0 +1,343 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}New Sale — Junaid Motors{% endblock %}
+{% block page_title %}Admin Car Sale Form{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <!-- Main Admin Car Sale Form -->
+  <div class="col-lg-8">
+    <form method="post" id="sale-form" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- Step 1: Car Selection & Sale Date -->
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div><span class="badge bg-primary me-2">1</span>Car & Sale Date</div>
+          <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>Official Transaction Log</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-7">
+              <label class="form-label fw-bold">Available Car <span class="text-danger">*</span></label>
+              {{ form.car }}
+            </div>
+            <div class="col-md-5">
+              <label class="form-label fw-bold">Sale Date <span class="text-danger">*</span></label>
+              {{ form.sale_date }}
+            </div>
+          </div>
+          <div id="car-info-box" class="mt-3 p-3 rounded" style="background:var(--bg);border:1px solid var(--border);min-height:60px;"></div>
+        </div>
+      </div>
+
+      <!-- Step 2: Customer -->
+      <div class="card mb-3">
+        <div class="card-header"><span class="badge bg-primary me-2">2</span>Customer Information</div>
+        <div class="card-body">
+          <div id="existing-customer-section">
+            <label class="form-label fw-bold">Select Customer <span class="text-danger">*</span></label>
+            {{ form.customer }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Comprehensive Payment Fields -->
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div><span class="badge bg-primary me-2">3</span>Payment Details & Financial Plan</div>
+          <span class="badge bg-light text-dark border">12 Payment Fields Active</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Total Sale Price (Rs.) <span class="text-danger">*</span></label>
+              {{ form.total_amount }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Payment Method <span class="text-danger">*</span></label>
+              {{ form.payment_method }}
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Sale Type / Plan</label>
+              {{ form.payment_type }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Payment Status</label>
+              {{ form.payment_status }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Payment Received (Rs.)</label>
+              {{ form.payment_received }}
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-muted">Remaining Balance (Rs.)</label>
+              <input type="text" id="calc_remaining_balance" class="form-control fw-bold text-danger bg-light" value="Rs. 0" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Client Video / Proof</label>
+              {{ form.video }}
+            </div>
+          </div>
+
+          <!-- Installment Configuration Section -->
+          <div id="installment-section" class="d-none border-top pt-3 mt-3">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-clock-history me-1"></i>Installment Plan Details</h6>
+            
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Down Payment (Rs.)</label>
+                {{ form.down_payment }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Installment Amount (Rs.)</label>
+                {{ form.monthly_installment }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Total Installments (Months)</label>
+                {{ form.installment_months }}
+              </div>
+            </div>
+
+            <div class="row g-2 mb-3 p-3 rounded" style="background:var(--bg); border:1px solid var(--border);">
+              <div class="col-md-4">
+                <div class="small text-muted fw-bold">INSTALLMENTS PAID</div>
+                <div id="calc_installments_paid" class="fw-bold text-success fs-6">0 Paid</div>
+              </div>
+              <div class="col-md-4">
+                <div class="small text-muted fw-bold">INSTALLMENTS REMAINING</div>
+                <div id="calc_installments_remaining" class="fw-bold text-warning fs-6">0 Left</div>
+              </div>
+              <div class="col-md-4">
+                <div class="small text-muted fw-bold">NEXT DUE DATE</div>
+                <div id="calc_next_due_date" class="fw-bold text-primary fs-6">—</div>
+              </div>
+            </div>
+
+            <!-- Installment Schedule Preview -->
+            <div class="card" style="background:var(--bg);">
+              <div class="card-header py-2" style="font-size:0.8rem;"><i class="bi bi-calendar-check me-1"></i>Installment Schedule Preview</div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table mb-0" style="font-size:0.82rem;">
+                    <thead><tr><th>#</th><th>Due Date</th><th>Amount</th><th>Status</th></tr></thead>
+                    <tbody id="installment-preview"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-amber w-100 py-3 fw-bold" style="font-size:1.05rem;">
+        <i class="bi bi-check-circle-fill me-2"></i>Confirm & Record Car Sale
+      </button>
+    </form>
+  </div>
+
+  <!-- Real-time Admin Sale Summary Panel -->
+  <div class="col-lg-4">
+    <div class="card position-sticky" style="top:80px;">
+      <div class="card-header fw-bold"><i class="bi bi-clipboard-check me-2 text-amber"></i>Sale Audit Breakdown</div>
+      <div class="card-body">
+        <div class="mb-3">
+          <div style="color:var(--text-muted);font-size:0.78rem;" class="fw-bold">ESTIMATED PROFIT</div>
+          <div id="profit-preview" class="text-profit fw-bold" style="font-size:1.4rem;">Rs. 0</div>
+        </div>
+
+        <div class="py-2" style="border-top:1px solid var(--border);">
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.85rem;color:var(--text-muted);">Sale Date</span>
+            <span id="summary-sale-date" class="fw-bold" style="font-size:0.85rem;">—</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.85rem;color:var(--text-muted);">Total Sale Price</span>
+            <span id="summary-total" class="fw-bold text-primary">—</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.85rem;color:var(--text-muted);">Payment Received</span>
+            <span id="summary-received" class="fw-bold text-success">Rs. 0</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.85rem;color:var(--text-muted);">Remaining Balance</span>
+            <span id="summary-remaining" class="fw-bold text-danger">Rs. 0</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.85rem;color:var(--text-muted);">Payment Method</span>
+            <span id="summary-method" class="badge bg-light text-dark border">Cash</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.85rem;color:var(--text-muted);">Payment Status</span>
+            <span id="summary-status" class="badge badge-pending">Pending</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.85rem;color:var(--text-muted);">Plan Type</span>
+            <span id="summary-type" style="font-size:0.85rem;" class="fw-semibold">Cash</span>
+          </div>
+        </div>
+
+        <!-- Installment Summary Breakdown -->
+        <div id="summary-installment-details" class="py-2 d-none" style="border-top:1px dashed var(--border);">
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.82rem;color:var(--text-muted);">Down Payment</span>
+            <span id="summary-downpayment" class="fw-semibold" style="font-size:0.85rem;">Rs. 0</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.82rem;color:var(--text-muted);">Total Installments</span>
+            <span id="summary-months" style="font-size:0.85rem;">0 Months</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.82rem;color:var(--text-muted);">Installment Amount</span>
+            <span id="summary-monthly" style="font-size:0.85rem;">Rs. 0 / mo</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.82rem;color:var(--text-muted);">Installments Paid</span>
+            <span id="summary-paid-count" class="text-success fw-bold" style="font-size:0.85rem;">0</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.82rem;color:var(--text-muted);">Installments Remaining</span>
+            <span id="summary-rem-count" class="text-warning fw-bold" style="font-size:0.85rem;">0</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span style="font-size:0.82rem;color:var(--text-muted);">Next Due Date</span>
+            <span id="summary-next-due" class="text-primary fw-bold" style="font-size:0.85rem;">—</span>
+          </div>
+        </div>
+
+        <div class="mt-3 p-3 rounded" style="background:rgba(37,99,235,0.06);border:1px solid rgba(37,99,235,0.15);font-size:0.8rem;color:var(--text-muted);">
+          <i class="bi bi-info-circle-fill me-1 text-primary"></i>
+          All 12 payment fields are synchronized live. Click <strong>Confirm & Record Car Sale</strong> to complete transaction.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const totalAmountEl = document.getElementById('id_total_amount');
+  const paymentReceivedEl = document.getElementById('id_payment_received');
+  const calcRemainingEl = document.getElementById('calc_remaining_balance');
+  const paymentMethodEl = document.getElementById('id_payment_method');
+  const paymentTypeEl = document.getElementById('id_payment_type');
+  const paymentStatusEl = document.getElementById('id_payment_status');
+  const saleDateEl = document.getElementById('id_sale_date');
+
+  const downPaymentEl = document.getElementById('id_down_payment');
+  const monthlyInstEl = document.getElementById('id_monthly_installment');
+  const instMonthsEl = document.getElementById('id_installment_months');
+
+  function updateAllPaymentCalculations() {
+    const total = parseFloat(totalAmountEl?.value || 0);
+    const pType = paymentTypeEl?.value || 'cash';
+    let received = parseFloat(paymentReceivedEl?.value || 0);
+    const dp = parseFloat(downPaymentEl?.value || 0);
+    const monthly = parseFloat(monthlyInstEl?.value || 0);
+    const months = parseInt(instMonthsEl?.value || 0);
+
+    // If cash & user hasn't typed received, auto-set received = total
+    if (pType === 'cash' && (!paymentReceivedEl.dataset.userEdited || received === 0)) {
+      received = total;
+      if (paymentReceivedEl) paymentReceivedEl.value = total;
+    } else if (pType === 'installment' && (!paymentReceivedEl.dataset.userEdited || received === 0)) {
+      received = dp;
+      if (paymentReceivedEl) paymentReceivedEl.value = dp;
+    }
+
+    const remaining = Math.max(0, total - received);
+
+    // Auto update status choice if default
+    if (paymentStatusEl) {
+      if (remaining === 0 && total > 0) {
+        paymentStatusEl.value = 'paid';
+      } else if (received > 0) {
+        paymentStatusEl.value = 'partially_paid';
+      } else {
+        paymentStatusEl.value = 'pending';
+      }
+    }
+
+    // Update remaining balance inputs & summary
+    if (calcRemainingEl) calcRemainingEl.value = formatPKR(remaining);
+    document.getElementById('summary-total').textContent = formatPKR(total);
+    document.getElementById('summary-received').textContent = formatPKR(received);
+    document.getElementById('summary-remaining').textContent = formatPKR(remaining);
+
+    // Method & status badges
+    const pMethodText = paymentMethodEl ? paymentMethodEl.options[paymentMethodEl.selectedIndex].text : 'Cash';
+    document.getElementById('summary-method').textContent = pMethodText;
+
+    const pStatusText = paymentStatusEl ? paymentStatusEl.options[paymentStatusEl.selectedIndex].text : 'Pending';
+    const pStatusVal = paymentStatusEl ? paymentStatusEl.value : 'pending';
+    const statusBadge = document.getElementById('summary-status');
+    if (statusBadge) {
+      statusBadge.textContent = pStatusText;
+      statusBadge.className = pStatusVal === 'paid' ? 'badge badge-paid' : (pStatusVal === 'partially_paid' ? 'badge bg-info text-white' : 'badge badge-pending');
+    }
+
+    // Sale date summary
+    const saleDateVal = saleDateEl?.value || new Date().toISOString().split('T')[0];
+    document.getElementById('summary-sale-date').textContent = saleDateVal;
+
+    // Installment specific updates
+    const instDetailsBox = document.getElementById('summary-installment-details');
+    if (pType === 'installment') {
+      instDetailsBox?.classList.remove('d-none');
+      document.getElementById('summary-type').textContent = 'Installment';
+      document.getElementById('summary-downpayment').textContent = formatPKR(dp);
+      document.getElementById('summary-months').textContent = months + ' Months';
+      document.getElementById('summary-monthly').textContent = formatPKR(monthly) + ' / mo';
+      
+      const paidCount = 0; // New sale starts with 0 paid installments
+      const remCount = Math.max(0, months - paidCount);
+
+      document.getElementById('calc_installments_paid').textContent = paidCount + ' Paid';
+      document.getElementById('summary-paid-count').textContent = paidCount;
+
+      document.getElementById('calc_installments_remaining').textContent = remCount + ' Left';
+      document.getElementById('summary-rem-count').textContent = remCount;
+
+      // Next due date (Sale Date + 30 days)
+      if (months > 0) {
+        const baseDate = saleDateVal ? new Date(saleDateVal) : new Date();
+        const nextDue = new Date(baseDate);
+        nextDue.setDate(nextDue.getDate() + 30);
+        const nextDueStr = nextDue.toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
+        document.getElementById('calc_next_due_date').textContent = nextDueStr;
+        document.getElementById('summary-next-due').textContent = nextDueStr;
+      } else {
+        document.getElementById('calc_next_due_date').textContent = '—';
+        document.getElementById('summary-next-due').textContent = '—';
+      }
+    } else {
+      instDetailsBox?.classList.add('d-none');
+      document.getElementById('summary-type').textContent = 'Cash';
+    }
+
+    updateProfitPreview();
+  }
+
+  paymentReceivedEl?.addEventListener('input', function() {
+    this.dataset.userEdited = "true";
+    updateAllPaymentCalculations();
+  });
+
+  [totalAmountEl, paymentMethodEl, paymentTypeEl, paymentStatusEl, saleDateEl, downPaymentEl, monthlyInstEl, instMonthsEl].forEach(el => {
+    el?.addEventListener('input', updateAllPaymentCalculations);
+    el?.addEventListener('change', updateAllPaymentCalculations);
+  });
+
+  updateAllPaymentCalculations();
+});
+</script>
+{% endblock %}
+

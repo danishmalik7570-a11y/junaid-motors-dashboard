@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Customers — Junaid Motors{% endblock %}
+{% block page_title %}Customers{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <form method="get" class="search-wrap">
+    <i class="bi bi-search"></i>
+    <input type="text" name="search" value="{{ search }}" class="search-bar" placeholder="Search customers...">
+  </form>
+  <a href="{% url 'add_customer' %}" class="btn-amber"><i class="bi bi-person-plus me-1"></i>Add Customer</a>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-people me-2 text-amber"></i>All Customers <span style="color:var(--text-muted);font-weight:400;">({{ customers.count }})</span></div>
+  <div class="card-body p-0">
+    {% if customers %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr><th>Name</th><th>CNIC</th><th>Phone</th><th>City</th><th>Purchases</th><th>Pending Amt</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for customer in customers %}
+          <tr>
+            <td class="fw-bold">{{ customer.name }}</td>
+            <td style="font-family:monospace;font-size:0.85rem;">{{ customer.cnic }}</td>
+            <td>{{ customer.phone }}</td>
+            <td>{{ customer.city }}</td>
+            <td><span class="badge badge-available">{{ customer.total_purchases }}</span></td>
+            <td>
+              {% with pending=customer.pending_amount %}
+              {% if pending > 0 %}<span class="text-danger fw-bold">Rs.{{ pending|floatformat:0|intcomma }}</span>{% else %}<span class="text-success">—</span>{% endif %}
+              {% endwith %}
+            </td>
+            <td>
+              <a href="{% url 'customer_detail' customer.pk %}" class="btn-ghost" style="padding:4px 8px;font-size:0.78rem;"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'edit_customer' customer.pk %}" class="btn-ghost" style="padding:4px 8px;font-size:0.78rem;"><i class="bi bi-pencil"></i></a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><i class="bi bi-people"></i><p>No customers yet. <a href="{% url 'add_customer' %}" class="text-amber">Add first customer</a></p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

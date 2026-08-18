@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Under Repair Vehicles — Junaid Motors{% endblock %}
+{% block page_title %}Under Repair Vehicles{% endblock %}
+
+{% block content %}
+<!-- Top Toolbar -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h3 class="fw-extra-bold mb-1 text-dark"><i class="bi bi-tools text-primary me-2"></i>Under Repair Vehicles</h3>
+    <p class="text-muted-custom mb-0 fs-7">Track workshop repairs, maintenance costs, and vehicle readiness.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'inventory_list' %}" class="btn-ghost fw-bold"><i class="bi bi-car-front me-1"></i>All Inventory</a>
+    <a href="{% url 'add_repair' %}" class="btn btn-primary fw-bold"><i class="bi bi-plus-lg me-1"></i>Log Repair Vehicle</a>
+  </div>
+</div>
+
+<!-- KPI Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card info">
+      <div class="stat-icon"><i class="bi bi-tools"></i></div>
+      <div class="stat-content">
+        <div class="stat-value fw-extra-bold text-primary">{{ active_count }}</div>
+        <div class="stat-label">Currently Under Repair</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card success">
+      <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+      <div class="stat-content">
+        <div class="stat-value fw-extra-bold text-success">{{ completed_count }}</div>
+        <div class="stat-label">Repairs Completed</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card warning">
+      <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+      <div class="stat-content">
+        <div class="stat-value text-amount fw-extra-bold">Rs. {{ total_cost|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Total Repair Costs</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Repairs Table -->
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div><i class="bi bi-list-task me-2 text-primary"></i><span class="fw-extra-bold">Vehicle Workshop & Repair Logs</span></div>
+    <span class="badge bg-primary fw-bold">{{ repairs.count }} Total Logs</span>
+  </div>
+  <div class="card-body p-0">
+    {% if repairs %}
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Vehicle</th>
+            <th>Reg No</th>
+            <th>Workshop / Mechanic</th>
+            <th>Work Description</th>
+            <th>Est. Cost</th>
+            <th>Start Date</th>
+            <th class="text-center">Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in repairs %}
+          <tr>
+            <td class="fw-extra-bold text-dark">{{ r.car.name }} ({{ r.car.model_year }})</td>
+            <td class="fw-bold text-amber">{{ r.car.registration_no }}</td>
+            <td class="fw-bold text-dark">{{ r.workshop_name }}</td>
+            <td class="fw-semibold text-secondary" style="max-width:250px;">{{ r.work_description|truncatechars:60 }}</td>
+            <td class="fw-extra-bold text-dark">Rs. {{ r.estimated_cost|floatformat:0|intcomma }}</td>
+            <td class="fw-bold text-muted-custom">{{ r.start_date|date:"d M Y" }}</td>
+            <td class="text-center">
+              {% if r.status == 'in_progress' %}
+                <span class="badge bg-primary"><i class="bi bi-gear-wide-connected me-1"></i>IN PROGRESS</span>
+              {% elif r.status == 'pending_parts' %}
+                <span class="badge bg-warning"><i class="bi bi-hourglass-split me-1"></i>PENDING PARTS</span>
+              {% else %}
+                <span class="badge badge-paid"><i class="bi bi-check-lg me-1"></i>COMPLETED</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if r.status != 'completed' %}
+              <form method="post" action="{% url 'complete_repair' r.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-success fw-bold me-1" title="Mark Completed & Set Car Available"><i class="bi bi-check2-circle me-1"></i>Complete</button>
+              </form>
+              {% endif %}
+              <a href="{% url 'edit_repair' r.pk %}" class="btn btn-sm btn-ghost fw-bold" title="Edit Repair Log"><i class="bi bi-pencil"></i></a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><i class="bi bi-tools"></i><p>No vehicle repair records logged yet. <a href="{% url 'add_repair' %}" class="text-primary fw-bold">Log a vehicle repair</a></p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

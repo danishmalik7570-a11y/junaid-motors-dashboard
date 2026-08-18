@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Lead: {{ lead.name }} — Junaid Motors{% endblock %}
+{% block page_title %}Lead Detail{% endblock %}
+
+{% block content %}
+<div class="d-flex gap-2 mb-4">
+  <a href="{% url 'lead_list' %}" class="btn-ghost"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-funnel me-2 text-amber"></i>Lead Info</div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <tbody>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;width:40%;">Name</td><td class="fw-bold">{{ lead.name }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Phone</td><td>{{ lead.phone }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Source</td><td><span class="badge badge-{{ lead.source }}">{{ lead.get_source_display }}</span></td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Interested In</td><td class="fw-bold">{{ lead.interested_car }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Budget</td><td>{% if lead.budget %}Rs.{{ lead.budget|floatformat:0|intcomma }}{% else %}Not specified{% endif %}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Status</td>
+              <td>
+                <span class="badge {% if lead.status == 'converted' %}badge-paid{% elif lead.status == 'lost' %}badge-overdue{% else %}badge-pending{% endif %}">
+                  {{ lead.get_status_display }}
+                </span>
+              </td>
+            </tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Next Followup</td><td>{{ lead.next_followup|date:"d M Y"|default:"—" }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Created</td><td>{{ lead.created_at|date:"d M Y" }}</td></tr>
+            {% if lead.notes %}<tr><td style="color:var(--text-muted);font-size:0.85rem;">Notes</td><td>{{ lead.notes }}</td></tr>{% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-pencil me-2 text-amber"></i>Update Lead</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">Name</label>{{ form.name }}</div>
+            <div class="col-md-6"><label class="form-label">Phone</label>{{ form.phone }}</div>
+            <div class="col-md-6"><label class="form-label">Source</label>{{ form.source }}</div>
+            <div class="col-md-6"><label class="form-label">Status</label>{{ form.status }}</div>
+            <div class="col-md-6"><label class="form-label">Budget</label>{{ form.budget }}</div>
+            <div class="col-md-6"><label class="form-label">Next Follow-up</label>{{ form.next_followup }}</div>
+            <div class="col-12"><label class="form-label">Notes</label>{{ form.notes }}</div>
+          </div>
+          <button type="submit" class="btn-amber mt-3"><i class="bi bi-check-lg me-1"></i>Update Lead</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

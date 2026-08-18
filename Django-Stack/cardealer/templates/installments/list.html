@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Installments & Vouchers — Junaid Motors{% endblock %}
+{% block page_title %}Installment System & Vouchers{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-2-4 col-sm-6">
+    <div class="stat-card">
+      <div class="stat-icon"><i class="bi bi-calendar-event text-primary"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" style="font-size:1.1rem;">Rs.{{ summary.total_expected|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Expected This Month</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2-4 col-sm-6">
+    <div class="stat-card success">
+      <div class="stat-icon"><i class="bi bi-check-circle-fill text-success"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" style="font-size:1.1rem;">Rs.{{ summary.collected|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Collected This Month</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2-4 col-sm-6">
+    <div class="stat-card warning">
+      <div class="stat-icon"><i class="bi bi-clock-history text-warning"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ summary.pending_count }}</div>
+        <div class="stat-label">Pending / Overdue</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2-4 col-sm-6">
+    <div class="stat-card danger">
+      <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill text-danger"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" style="font-size:1.1rem;">Rs.{{ summary.overdue_amount|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Overdue Amount</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2-4 col-sm-6">
+    <div class="stat-card info">
+      <div class="stat-icon"><i class="bi bi-wallet2 text-info"></i></div>
+      <div class="stat-content">
+        <div class="stat-value" style="font-size:1.1rem;">Rs.{{ summary.total_remaining_balance|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Total Portfolio Remaining</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Controls Row: Search & Filters -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+  <!-- Filter Pills -->
+  <div class="d-flex gap-2 align-items-center flex-wrap">
+    <a href="?{% if search_query %}search={{ search_query }}&{% endif %}" class="btn {% if not status_filter %}btn-primary{% else %}btn-ghost{% endif %} btn-sm rounded-pill px-3">
+      All Status
+    </a>
+    <a href="?status=pending{% if search_query %}&search={{ search_query }}{% endif %}" class="btn {% if status_filter == 'pending' %}btn-primary{% else %}btn-ghost{% endif %} btn-sm rounded-pill px-3">
+      Pending
+    </a>
+    <a href="?status=overdue{% if search_query %}&search={{ search_query }}{% endif %}" class="btn {% if status_filter == 'overdue' %}btn-primary{% else %}btn-ghost{% endif %} btn-sm rounded-pill px-3">
+      Overdue
+    </a>
+    <a href="?status=paid{% if search_query %}&search={{ search_query }}{% endif %}" class="btn {% if status_filter == 'paid' %}btn-primary{% else %}btn-ghost{% endif %} btn-sm rounded-pill px-3">
+      Paid
+    </a>
+  </div>
+
+  <!-- Search Bar -->
+  <form method="get" class="search-wrap">
+    {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+    <i class="bi bi-search text-primary"></i>
+    <input type="text" name="search" value="{{ search_query }}" class="search-bar" placeholder="Search customer, car, invoice...">
+  </form>
+</div>
+
+<!-- Main Table Card -->
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-calendar-check me-2 text-primary"></i>Installment Tracker & Payment Receipts</span>
+    <span class="text-muted small">Showing {{ installments|length }} installment(s)</span>
+  </div>
+  <div class="card-body p-0">
+    {% if installments %}
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Vehicle & Invoice</th>
+            <th>Installment #</th>
+            <th>Due Date</th>
+            <th>Amount</th>
+            <th>Remaining Sale Balance</th>
+            <th>Status</th>
+            <th class="text-end">Actions / Voucher</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inst in installments %}
+          <tr {% if inst.status == 'overdue' %}style="background:rgba(239,68,68,0.03);"{% endif %}>
+            <td>
+              <div class="fw-bold text-dark">{{ inst.customer.name }}</div>
+              <div class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ inst.customer.phone }}</div>
+            </td>
+            <td>
+              <div class="fw-semibold text-dark">{{ inst.sale.car.name }}</div>
+              <div class="text-muted small">Ref: <a href="{% url 'sale_detail' inst.sale.pk %}" class="text-primary text-decoration-none fw-semibold">{{ inst.sale.invoice_no }}</a></div>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border">
+                Inst #{{ inst.installment_no }} of {{ inst.sale.installment_months }}
+              </span>
+            </td>
+            <td>
+              <div class="fw-semibold">{{ inst.due_date|date:"d M Y" }}</div>
+              {% if inst.status == 'overdue' %}
+              <span class="text-danger fw-bold small"><i class="bi bi-exclamation-triangle me-1"></i>{{ inst.due_date|timesince }} overdue</span>
+              {% endif %}
+            </td>
+            <td class="fw-bold text-dark">
+              Rs.{{ inst.amount|floatformat:0|intcomma }}
+            </td>
+            <td>
+              <div class="fw-bold text-primary" style="font-size:0.88rem;">
+                Rs.{{ inst.sale.remaining_balance|floatformat:0|intcomma }}
+              </div>
+              <div class="text-muted small">
+                {{ inst.sale.remaining_installments_count }} inst. left
+              </div>
+            </td>
+            <td>
+              {% if inst.status == 'paid' %}
+              <span class="badge badge-paid"><i class="bi bi-check-circle-fill me-1"></i>Paid</span>
+              {% elif inst.status == 'overdue' %}
+              <span class="badge badge-sold"><i class="bi bi-exclamation-diamond-fill me-1"></i>Overdue</span>
+              {% else %}
+              <span class="badge badge-pending"><i class="bi bi-clock-fill me-1"></i>Pending</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-1">
+                {% if inst.status != 'paid' %}
+                <form method="post" action="{% url 'mark_paid' inst.pk %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-amber btn-sm" style="font-size:0.8rem; padding:5px 12px;">
+                    <i class="bi bi-check2-circle me-1"></i>Mark Paid
+                  </button>
+                </form>
+                {% else %}
+                <a href="{% url 'installment_voucher' inst.pk %}" class="btn-outline-amber btn-sm" style="font-size:0.8rem; padding:5px 12px;">
+                  <i class="bi bi-printer me-1"></i>Print Voucher
+                </a>
+                {% endif %}
+                <a href="{% url 'installment_voucher' inst.pk %}" class="btn-ghost btn-sm" title="View Receipt Details" style="font-size:0.8rem; padding:5px 9px;">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-calendar-check"></i>
+      <p>No installments found for the selected filter or search query.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

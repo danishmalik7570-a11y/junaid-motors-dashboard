@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Junaid Motors{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4 d-flex align-items-center justify-content-between">
+  <div>
+    <h3 class="mb-1 text-dark fw-extra-bold"><i class="bi bi-car-front-fill text-primary me-2"></i>{{ title }}</h3>
+    <p class="text-muted-custom mb-0 fs-7">Enter vehicle specifications, pricing, and media details below.</p>
+  </div>
+  <a href="{% url 'inventory_list' %}" class="btn-ghost fw-bold">
+    <i class="bi bi-arrow-left me-1"></i>Back to Inventory
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- Section 1: Vehicle Specifications -->
+      <div class="card mb-4 shadow-sm border-0" style="border:1px solid #CBD5E1 !important;">
+        <div class="card-header bg-primary text-white py-3 fw-extra-bold">
+          <i class="bi bi-info-circle-fill me-2 text-white"></i>Vehicle Specifications
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label fw-bold text-dark fs-7">
+                <i class="bi bi-car-front me-1 text-primary"></i>Car Name / Model *
+              </label>
+              {{ form.name }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold text-dark fs-7">
+                <i class="bi bi-calendar3 me-1 text-primary"></i>Model Year *
+              </label>
+              {{ form.model_year }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark fs-7">
+                <i class="bi bi-palette me-1 text-primary"></i>Color *
+              </label>
+              {{ form.color }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark fs-7">
+                <i class="bi bi-card-heading me-1 text-primary"></i>Registration Number *
+              </label>
+              {{ form.registration_no }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Financials & Status -->
+      <div class="card mb-4 shadow-sm border-0" style="border:1px solid #CBD5E1 !important;">
+        <div class="card-header bg-primary text-white py-3 fw-extra-bold">
+          <i class="bi bi-cash-stack me-2 text-white"></i>Pricing & Inventory Status
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-bold text-dark fs-7">
+                <i class="bi bi-wallet2 me-1 text-primary"></i>Purchase Price (PKR) *
+              </label>
+              {{ form.purchase_price }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold text-dark fs-7">
+                <i class="bi bi-tag-fill me-1 text-primary"></i>Selling Price (PKR) *
+              </label>
+              {{ form.selling_price }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold text-dark fs-7">
+                <i class="bi bi-lightning-charge me-1 text-primary"></i>Inventory Status *
+              </label>
+              {{ form.status }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Media & Documents -->
+      <div class="card mb-4 shadow-sm border-0" style="border:1px solid #CBD5E1 !important;">
+        <div class="card-header bg-primary text-white py-3 fw-extra-bold">
+          <i class="bi bi-camera-reels-fill me-2 text-white"></i>Media & Additional Notes
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark fs-7">
+                <i class="bi bi-image me-1 text-primary"></i>Car Photo Image
+              </label>
+              {{ form.image }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark fs-7">
+                <i class="bi bi-film me-1 text-primary"></i>Car Video (Optional)
+              </label>
+              {{ form.video }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-bold text-dark fs-7">
+                <i class="bi bi-journal-text me-1 text-primary"></i>Additional Notes
+              </label>
+              {{ form.notes }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% if form.errors %}
+      <div class="alert alert-danger mt-3" style="background:#FEF2F2;border-color:#FCA5A5;color:#991B1B;border-radius:0.75rem;">
+        {% for field in form %}
+          {% for error in field.errors %}
+            <div class="d-flex align-items-center gap-2 mb-1"><i class="bi bi-x-circle-fill"></i> <strong>{{ field.label }}:</strong> {{ error }}</div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="d-flex align-items-center gap-3 mt-4 mb-5">
+        <button type="submit" class="btn-add-car px-4 py-2 fs-6 shadow-sm">
+          <i class="bi bi-check-circle-fill me-1"></i>Save Vehicle Record
+        </button>
+        <a href="{% url 'inventory_list' %}" class="btn-ghost px-4 py-2 fs-6 fw-bold">
+          <i class="bi bi-x-lg me-1"></i>Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Voucher #{{ installment.voucher_no }} — Junaid Motors{% endblock %}
+{% block page_title %}Installment Payment Voucher{% endblock %}
+
+{% block content %}
+<!-- Action Buttons (Screen Only) -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2 no-print">
+  <div class="d-flex gap-2 align-items-center">
+    <a href="{% url 'installment_list' %}" class="btn-ghost">
+      <i class="bi bi-arrow-left me-1"></i>Back to Installments
+    </a>
+    <a href="{% url 'sale_detail' sale.pk %}" class="btn-outline-amber">
+      <i class="bi bi-receipt me-1"></i>Sale Invoice {{ sale.invoice_no }}
+    </a>
+  </div>
+  <button onclick="window.print()" class="btn-amber fs-6 px-4 py-2">
+    <i class="bi bi-printer me-1"></i>Print Voucher
+  </button>
+</div>
+
+<!-- Voucher Card Container -->
+<div class="card voucher-box mx-auto" style="max-width:850px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:0.85rem; box-shadow:0 4px 20px rgba(15,23,42,0.06);">
+  <div class="card-body p-4 p-md-5">
+
+    <!-- Header Section -->
+    <div class="row align-items-start mb-4">
+      <div class="col-7">
+        <h3 class="fw-bold mb-1" style="color:#2563EB; letter-spacing:-0.5px;">
+          <i class="bi bi-car-front-fill me-2"></i>Junaid Motors
+        </h3>
+        <div class="text-muted small" style="line-height:1.6;">
+          <strong>Car Dealership Management & Finance</strong><br>
+          123 Main Boulevard, Auto Market, Karachi<br>
+          <i class="bi bi-telephone-fill text-amber me-1"></i>+92-300-1234567 &bull; <i class="bi bi-globe me-1"></i>www.junaidmotors.com
+        </div>
+      </div>
+      <div class="col-5 text-end">
+        <div class="badge bg-primary text-white text-uppercase px-3 py-2 fs-6 mb-2" style="letter-spacing:0.08em;">
+          Payment Receipt Voucher
+        </div>
+        <div class="fw-bold fs-5 text-dark">{{ installment.voucher_no }}</div>
+        <div class="text-muted small">Date Paid: <strong>{{ installment.paid_date|default:installment.due_date|date:"d M Y" }}</strong></div>
+        <div class="text-muted small">Ref Invoice: <strong class="text-primary">{{ sale.invoice_no }}</strong></div>
+      </div>
+    </div>
+
+    <hr style="border-color:#E2E8F0; margin:1rem 0 1.5rem;">
+
+    <!-- Customer & Vehicle Details -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <div class="p-3 rounded-3" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+          <div class="text-uppercase fw-bold text-muted mb-2" style="font-size:0.72rem; letter-spacing:0.06em;">
+            <i class="bi bi-person-fill text-primary me-1"></i>Customer Details
+          </div>
+          <div class="fw-bold text-dark fs-6">{{ installment.customer.name }}</div>
+          <div class="small text-secondary mt-1"><strong>CNIC:</strong> {{ installment.customer.cnic }}</div>
+          <div class="small text-secondary"><strong>Phone:</strong> {{ installment.customer.phone }}</div>
+          <div class="small text-secondary"><strong>Address:</strong> {{ installment.customer.address }}, {{ installment.customer.city }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="p-3 rounded-3" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+          <div class="text-uppercase fw-bold text-muted mb-2" style="font-size:0.72rem; letter-spacing:0.06em;">
+            <i class="bi bi-car-front text-primary me-1"></i>Vehicle Details
+          </div>
+          <div class="fw-bold text-dark fs-6">{{ sale.car.name }}</div>
+          <div class="small text-secondary mt-1"><strong>Model Year:</strong> {{ sale.car.model_year }}</div>
+          <div class="small text-secondary"><strong>Reg No:</strong> <span class="text-primary fw-bold">{{ sale.car.registration_no }}</span></div>
+          <div class="small text-secondary"><strong>Color:</strong> {{ sale.car.color }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Current Payment Details -->
+    <div class="p-3 rounded-3 mb-4" style="background:#EFF6FF; border:1px solid #BFDBFE;">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <span class="badge bg-success text-white mb-1"><i class="bi bi-check-circle-fill me-1"></i>INSTALLMENT PAID</span>
+          <h5 class="fw-bold mb-0 text-dark">
+            Installment #{{ installment.installment_no }} of {{ sale.installment_months }}
+          </h5>
+          <span class="text-muted small">Due Date: {{ installment.due_date|date:"d M Y" }}</span>
+        </div>
+        <div class="text-end">
+          <div class="text-muted small text-uppercase fw-bold" style="font-size:0.7rem;">Amount Received</div>
+          <div class="fs-3 fw-bold text-primary">Rs. {{ installment.amount|floatformat:0|intcomma }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Remaining Installment System Overview Card -->
+    <div class="card mb-4" style="border:1px solid #CBD5E1; background:#FFFFFF;">
+      <div class="card-header bg-light fw-bold text-dark d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-pie-chart-fill text-primary me-2"></i>Remaining Installment System Summary</span>
+        <span class="badge bg-secondary">{{ paid_pct }}% Paid</span>
+      </div>
+      <div class="card-body">
+        <!-- Visual Progress Bar -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small fw-bold mb-1">
+            <span>Payment Progress</span>
+            <span class="text-primary">Rs. {{ total_paid|floatformat:0|intcomma }} / Rs. {{ sale.total_amount|floatformat:0|intcomma }}</span>
+          </div>
+          <div class="progress" style="height: 10px; background:#E2E8F0; border-radius:10px;">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ paid_pct }}%; border-radius:10px;" aria-valuenow="{{ paid_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+
+        <!-- 4 Grid Stats -->
+        <div class="row g-2 text-center">
+          <div class="col-6 col-md-3">
+            <div class="p-2 rounded" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+              <div class="text-muted" style="font-size:0.7rem; font-weight:700;">TOTAL VEHICLE COST</div>
+              <div class="fw-bold text-dark" style="font-size:0.95rem;">Rs.{{ sale.total_amount|floatformat:0|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="p-2 rounded" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+              <div class="text-muted" style="font-size:0.7rem; font-weight:700;">PAID TO DATE</div>
+              <div class="fw-bold text-success" style="font-size:0.95rem;">Rs.{{ total_paid|floatformat:0|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="p-2 rounded" style="background:#FFFBEB; border:1px solid #FDE68A;">
+              <div class="text-warning-dark" style="font-size:0.7rem; font-weight:700; color:#B45309;">REMAINING BALANCE</div>
+              <div class="fw-bold text-danger" style="font-size:0.95rem;">Rs.{{ remaining_balance|floatformat:0|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="p-2 rounded" style="background:#EFF6FF; border:1px solid #BFDBFE;">
+              <div class="text-primary" style="font-size:0.7rem; font-weight:700;">REMAINING MONTHS</div>
+              <div class="fw-bold text-primary" style="font-size:0.95rem;">{{ remaining_count }} Left</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Complete Installment Schedule Checklist -->
+    <div class="mb-4">
+      <div class="fw-bold text-dark mb-2" style="font-size:0.85rem; text-transform:uppercase; letter-spacing:0.04em;">
+        <i class="bi bi-list-check text-primary me-1"></i>Complete Installment Schedule Status
+      </div>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle mb-0" style="font-size:0.8rem;">
+          <thead style="background:#F0F7FF; color:#1E3A8A;">
+            <tr>
+              <th class="text-center">#</th>
+              <th>Due Date</th>
+              <th>Amount</th>
+              <th>Paid Date</th>
+              <th>Status</th>
+              <th class="text-end">Balance After</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inst in all_installments %}
+            <tr {% if inst.pk == installment.pk %}style="background:#FEF3C7; font-weight:bold;"{% endif %}>
+              <td class="text-center fw-bold">Inst #{{ inst.installment_no }}</td>
+              <td>{{ inst.due_date|date:"d M Y" }}</td>
+              <td>Rs.{{ inst.amount|floatformat:0|intcomma }}</td>
+              <td>
+                {% if inst.paid_date %}
+                {{ inst.paid_date|date:"d M Y" }}
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                {% if inst.status == 'paid' %}
+                <span class="badge bg-success">PAID</span>
+                {% elif inst.status == 'overdue' %}
+                <span class="badge bg-danger">OVERDUE</span>
+                {% else %}
+                <span class="badge bg-warning text-dark">PENDING</span>
+                {% endif %}
+              </td>
+              <td class="text-end fw-semibold">
+                Rs.{{ inst.remaining_balance_after|floatformat:0|intcomma }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Terms & Signature Row -->
+    <div class="row pt-4 mt-4" style="border-top:1px solid #E2E8F0;">
+      <div class="col-6">
+        <div class="text-center pt-5">
+          <div style="border-top:1.5px dashed #64748B; width:70%; margin:0 auto 4px;"></div>
+          <span class="small text-muted fw-bold">Customer Signature</span>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="text-center pt-5">
+          <div style="border-top:1.5px dashed #2563EB; width:70%; margin:0 auto 4px;"></div>
+          <span class="small text-primary fw-bold">Authorized Dealer Stamp & Signature</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Computer Generated Footer -->
+    <div class="text-center mt-4 pt-3 text-muted small" style="font-size:0.75rem; border-top:1px solid #F1F5F9;">
+      This payment voucher is an official computer-generated receipt issued by <strong>Junaid Motors</strong>.
+    </div>
+
+  </div>
+</div>
+{% endblock %}

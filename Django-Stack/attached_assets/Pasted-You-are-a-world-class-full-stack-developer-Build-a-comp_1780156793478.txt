@@ -1,0 +1,967 @@
+You are a world-class full-stack developer. Build a complete, production-grade Car Dealership Management System using ONLY these technologies:
+
+FRONTEND: HTML, CSS, Bootstrap 5, Tailwind CSS
+BACKEND: Python, Django
+DATABASE: SQLite (Django default)
+NO other frameworks, libraries, or languages allowed.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏗️ PROJECT STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+cardealer/                          ← Django project root
+├── manage.py
+├── cardealer/
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── apps/
+│   ├── dashboard/
+│   ├── inventory/
+│   ├── sales/
+│   ├── purchases/
+│   ├── customers/
+│   ├── installments/
+│   ├── leads/
+│   ├── staff/
+│   └── reports/
+├── templates/
+│   ├── base.html
+│   └── [all module templates]
+└── static/
+    ├── css/custom.css
+    └── js/main.js
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 DESIGN SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Theme: Dark premium automotive dashboard
+Primary color: #F59E0B (Amber/Gold)
+Background: #0A0B0F
+Card surface: #13151C
+Border: #1E2130
+Success: #10B981
+Danger: #EF4444
+Info: #3B82F6
+Warning: #F59E0B
+Text primary: #F1F5F9
+Text muted: #64748B
+
+Use Bootstrap 5 grid + components as base structure.
+Use Tailwind CSS utility classes for fine-grained styling.
+Write custom CSS in static/css/custom.css for dark theme overrides.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 DJANGO SETTINGS (settings.py)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'apps.dashboard',
+    'apps.inventory',
+    'apps.sales',
+    'apps.purchases',
+    'apps.customers',
+    'apps.installments',
+    'apps.leads',
+    'apps.staff',
+    'apps.reports',
+]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+LOGIN_URL = '/staff/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🗄️ COMPLETE DATABASE MODELS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+--- apps/inventory/models.py ---
+
+class Car(models.Model):
+    STATUS_CHOICES = [
+        ('available', 'Available'),
+        ('reserved', 'Reserved'),
+        ('sold', 'Sold'),
+        ('under_repair', 'Under Repair'),
+    ]
+    name = models.CharField(max_length=200)
+    model_year = models.IntegerField()
+    color = models.CharField(max_length=100)
+    registration_no = models.CharField(max_length=50, unique=True)
+    purchase_price = models.DecimalField(max_digits=12, decimal_places=2)
+    selling_price = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
+    image = models.ImageField(upload_to='cars/', blank=True, null=True)
+    entry_date = models.DateField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+
+    def profit_margin(self):
+        return self.selling_price - self.purchase_price
+
+    def days_in_stock(self):
+        from django.utils import timezone
+        return (timezone.now().date() - self.entry_date).days
+
+    def __str__(self):
+        return f"{self.name} ({self.model_year}) - {self.registration_no}"
+
+
+--- apps/customers/models.py ---
+
+class Customer(models.Model):
+    name = models.CharField(max_length=200)
+    cnic = models.CharField(max_length=15, unique=True)
+    phone = models.CharField(max_length=20)
+    address = models.TextField()
+    city = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def total_purchases(self):
+        return self.sale_set.count()
+
+    def pending_amount(self):
+        return self.installment_set.filter(status__in=['pending','overdue']).aggregate(
+            total=models.Sum('amount'))['total'] or 0
+
+    def __str__(self):
+        return f"{self.name} - {self.cnic}"
+
+
+--- apps/purchases/models.py ---
+
+class Purchase(models.Model):
+    car = models.OneToOneField('inventory.Car', on_delete=models.CASCADE)
+    seller_name = models.CharField(max_length=200)
+    seller_phone = models.CharField(max_length=20)
+    purchase_price = models.DecimalField(max_digits=12, decimal_places=2)
+    dealer_commission = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    document = models.FileField(upload_to='purchase_docs/', blank=True, null=True)
+    purchase_date = models.DateField()
+    notes = models.TextField(blank=True)
+
+    def net_cost(self):
+        return self.purchase_price + self.dealer_commission
+
+    def __str__(self):
+        return f"Purchase: {self.car.name} from {self.seller_name}"
+
+
+--- apps/sales/models.py ---
+
+class Sale(models.Model):
+    PAYMENT_CHOICES = [
+        ('cash', 'Cash'),
+        ('installment', 'Installment'),
+    ]
+    invoice_no = models.CharField(max_length=20, unique=True)
+    car = models.ForeignKey('inventory.Car', on_delete=models.PROTECT)
+    customer = models.ForeignKey('customers.Customer', on_delete=models.PROTECT)
+    sale_date = models.DateField(auto_now_add=True)
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_CHOICES)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    down_payment = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    monthly_installment = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    installment_months = models.IntegerField(default=0)
+    profit = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        if not self.invoice_no:
+            last = Sale.objects.order_by('-id').first()
+            num = (last.id + 1) if last else 1
+            self.invoice_no = f"INV-{num:05d}"
+        self.profit = self.total_amount - self.car.purchase_price
+        super().save(*args, **kwargs)
+        self.car.status = 'sold'
+        self.car.save()
+
+    def __str__(self):
+        return f"{self.invoice_no} - {self.car.name} to {self.customer.name}"
+
+
+--- apps/installments/models.py ---
+
+class Installment(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('overdue', 'Overdue'),
+    ]
+    sale = models.ForeignKey('sales.Sale', on_delete=models.CASCADE)
+    customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE)
+    installment_no = models.IntegerField()
+    due_date = models.DateField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    paid_date = models.DateField(blank=True, null=True)
+    late_fee = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+
+    def check_overdue(self):
+        from django.utils import timezone
+        if self.status == 'pending' and self.due_date < timezone.now().date():
+            self.status = 'overdue'
+            self.save()
+
+    def __str__(self):
+        return f"Installment #{self.installment_no} - {self.customer.name}"
+
+
+--- apps/leads/models.py ---
+
+class Lead(models.Model):
+    SOURCE_CHOICES = [
+        ('facebook', 'Facebook'),
+        ('whatsapp', 'WhatsApp'),
+        ('walkin', 'Walk-in'),
+        ('referral', 'Referral'),
+        ('phone', 'Phone Call'),
+    ]
+    STATUS_CHOICES = [
+        ('new', 'New'),
+        ('followup', 'Follow-up'),
+        ('testdrive', 'Test Drive'),
+        ('negotiating', 'Negotiating'),
+        ('converted', 'Converted'),
+        ('lost', 'Lost'),
+    ]
+    name = models.CharField(max_length=200)
+    phone = models.CharField(max_length=20)
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES)
+    interested_car = models.CharField(max_length=200)
+    budget = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+    notes = models.TextField(blank=True)
+    next_followup = models.DateField(blank=True, null=True)
+    test_drive_date = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.interested_car} ({self.status})"
+
+
+--- apps/staff/models.py ---
+
+class StaffProfile(models.Model):
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('manager', 'Manager'),
+        ('salesman', 'Salesman'),
+        ('accountant', 'Accountant'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    phone = models.CharField(max_length=20)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.role}"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌐 URL CONFIGURATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+--- cardealer/urls.py ---
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', RedirectView.as_view(url='/dashboard/')),
+    path('dashboard/', include('apps.dashboard.urls')),
+    path('inventory/', include('apps.inventory.urls')),
+    path('sales/', include('apps.sales.urls')),
+    path('purchases/', include('apps.purchases.urls')),
+    path('customers/', include('apps.customers.urls')),
+    path('installments/', include('apps.installments.urls')),
+    path('leads/', include('apps.leads.urls')),
+    path('staff/', include('apps.staff.urls')),
+    path('reports/', include('apps.reports.urls')),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+Each app's urls.py must include:
+
+apps/inventory/urls.py:
+  path('', views.inventory_list, name='inventory_list')
+  path('add/', views.add_car, name='add_car')
+  path('<int:pk>/', views.car_detail, name='car_detail')
+  path('<int:pk>/edit/', views.edit_car, name='edit_car')
+  path('<int:pk>/delete/', views.delete_car, name='delete_car')
+
+apps/sales/urls.py:
+  path('', views.sales_list, name='sales_list')
+  path('new/', views.new_sale, name='new_sale')
+  path('<int:pk>/', views.sale_detail, name='sale_detail')
+  path('<int:pk>/invoice/', views.sale_invoice, name='sale_invoice')
+
+apps/customers/urls.py:
+  path('', views.customer_list, name='customer_list')
+  path('add/', views.add_customer, name='add_customer')
+  path('<int:pk>/', views.customer_detail, name='customer_detail')
+
+apps/installments/urls.py:
+  path('', views.installment_list, name='installment_list')
+  path('<int:pk>/mark-paid/', views.mark_paid, name='mark_paid')
+
+apps/leads/urls.py:
+  path('', views.lead_list, name='lead_list')
+  path('add/', views.add_lead, name='add_lead')
+  path('<int:pk>/update-status/', views.update_lead_status, name='update_lead_status')
+
+apps/reports/urls.py:
+  path('', views.reports_home, name='reports_home')
+  path('daily/', views.daily_report, name='daily_report')
+  path('monthly/', views.monthly_report, name='monthly_report')
+  path('pnl/', views.pnl_report, name='pnl_report')
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙️ VIEWS — COMPLETE LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+--- apps/dashboard/views.py ---
+
+@login_required
+def dashboard(request):
+    today = timezone.now().date()
+    this_month_start = today.replace(day=1)
+
+    context = {
+        'total_cars_available': Car.objects.filter(status='available').count(),
+        'sold_this_month': Sale.objects.filter(sale_date__gte=this_month_start).count(),
+        'pending_installments': Installment.objects.filter(status__in=['pending','overdue']).count(),
+        'overdue_installments': Installment.objects.filter(status='overdue').count(),
+        'monthly_revenue': Sale.objects.filter(sale_date__gte=this_month_start).aggregate(
+            total=Sum('total_amount'))['total'] or 0,
+        'monthly_profit': Sale.objects.filter(sale_date__gte=this_month_start).aggregate(
+            total=Sum('profit'))['total'] or 0,
+        'new_leads': Lead.objects.filter(status='new').count(),
+        'total_customers': Customer.objects.count(),
+        'recent_sales': Sale.objects.select_related('car','customer').order_by('-sale_date')[:5],
+        'low_stock_warning': Car.objects.filter(status='available').count() < 5,
+        'today_sales': Sale.objects.filter(sale_date=today),
+        'slow_moving_cars': Car.objects.filter(
+            status='available',
+            entry_date__lte=today - timedelta(days=30)
+        ).count(),
+        'monthly_sales_chart': get_monthly_sales_data(),
+    }
+    return render(request, 'dashboard/dashboard.html', context)
+
+def get_monthly_sales_data():
+    data = []
+    today = timezone.now().date()
+    for i in range(5, -1, -1):
+        month = today.replace(day=1) - timedelta(days=i*28)
+        count = Sale.objects.filter(
+            sale_date__year=month.year,
+            sale_date__month=month.month
+        ).count()
+        revenue = Sale.objects.filter(
+            sale_date__year=month.year,
+            sale_date__month=month.month
+        ).aggregate(total=Sum('total_amount'))['total'] or 0
+        data.append({
+            'month': month.strftime('%b %Y'),
+            'count': count,
+            'revenue': float(revenue)
+        })
+    return data
+
+
+--- apps/inventory/views.py ---
+
+@login_required
+def inventory_list(request):
+    cars = Car.objects.all().order_by('-entry_date')
+    status_filter = request.GET.get('status', '')
+    search = request.GET.get('search', '')
+    if status_filter:
+        cars = cars.filter(status=status_filter)
+    if search:
+        cars = cars.filter(
+            Q(name__icontains=search) |
+            Q(registration_no__icontains=search) |
+            Q(color__icontains=search)
+        )
+    return render(request, 'inventory/list.html', {'cars': cars, 'status_filter': status_filter, 'search': search})
+
+@login_required
+def add_car(request):
+    if request.method == 'POST':
+        form = CarForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Car added to inventory successfully.')
+            return redirect('inventory_list')
+    else:
+        form = CarForm()
+    return render(request, 'inventory/form.html', {'form': form, 'title': 'Add New Car'})
+
+@login_required
+def car_detail(request, pk):
+    car = get_object_or_404(Car, pk=pk)
+    purchase = Purchase.objects.filter(car=car).first()
+    sale = Sale.objects.filter(car=car).first()
+    return render(request, 'inventory/detail.html', {'car': car, 'purchase': purchase, 'sale': sale})
+
+
+--- apps/sales/views.py ---
+
+@login_required
+def new_sale(request):
+    if request.method == 'POST':
+        form = SaleForm(request.POST)
+        if form.is_valid():
+            sale = form.save(commit=False)
+            sale.profit = sale.total_amount - sale.car.purchase_price
+            sale.save()
+            # Auto-generate installments if payment type is installment
+            if sale.payment_type == 'installment' and sale.installment_months > 0:
+                for i in range(1, sale.installment_months + 1):
+                    due = sale.sale_date + timedelta(days=30 * i)
+                    Installment.objects.create(
+                        sale=sale,
+                        customer=sale.customer,
+                        installment_no=i,
+                        due_date=due,
+                        amount=sale.monthly_installment,
+                        status='pending'
+                    )
+            messages.success(request, f'Sale recorded. Invoice: {sale.invoice_no}')
+            return redirect('sale_detail', pk=sale.pk)
+    else:
+        form = SaleForm()
+    available_cars = Car.objects.filter(status='available')
+    customers = Customer.objects.all()
+    return render(request, 'sales/new_sale.html', {
+        'form': form,
+        'available_cars': available_cars,
+        'customers': customers
+    })
+
+@login_required
+def sale_invoice(request, pk):
+    sale = get_object_or_404(Sale, pk=pk)
+    installments = Installment.objects.filter(sale=sale).order_by('installment_no')
+    return render(request, 'sales/invoice.html', {'sale': sale, 'installments': installments})
+
+
+--- apps/installments/views.py ---
+
+@login_required
+def installment_list(request):
+    today = timezone.now().date()
+    # Auto-update overdue status
+    Installment.objects.filter(status='pending', due_date__lt=today).update(status='overdue')
+
+    status_filter = request.GET.get('status', '')
+    installments = Installment.objects.select_related(
+        'sale__car', 'customer'
+    ).order_by('due_date')
+    if status_filter:
+        installments = installments.filter(status=status_filter)
+
+    summary = {
+        'total_expected': installments.filter(
+            due_date__month=today.month).aggregate(Sum('amount'))['amount__sum'] or 0,
+        'collected': installments.filter(
+            status='paid', paid_date__month=today.month).aggregate(Sum('amount'))['amount__sum'] or 0,
+        'overdue_amount': installments.filter(
+            status='overdue').aggregate(Sum('amount'))['amount__sum'] or 0,
+        'pending_count': installments.filter(status__in=['pending','overdue']).count(),
+    }
+    return render(request, 'installments/list.html', {
+        'installments': installments, 'summary': summary, 'status_filter': status_filter
+    })
+
+@login_required
+def mark_paid(request, pk):
+    installment = get_object_or_404(Installment, pk=pk)
+    installment.status = 'paid'
+    installment.paid_date = timezone.now().date()
+    installment.save()
+    messages.success(request, f'Installment #{installment.installment_no} marked as paid.')
+    return redirect('installment_list')
+
+
+--- apps/reports/views.py ---
+
+@login_required
+def pnl_report(request):
+    sales = Sale.objects.all()
+    total_revenue = sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+    total_profit = sales.aggregate(Sum('profit'))['profit__sum'] or 0
+    total_cost = Purchase.objects.aggregate(
+        total=Sum(F('purchase_price') + F('dealer_commission')))['total'] or 0
+    total_commission = Purchase.objects.aggregate(Sum('dealer_commission'))['dealer_commission__sum'] or 0
+
+    monthly_pnl = []
+    today = timezone.now().date()
+    for i in range(5, -1, -1):
+        month = today.replace(day=1) - timedelta(days=i*28)
+        month_sales = Sale.objects.filter(
+            sale_date__year=month.year, sale_date__month=month.month)
+        monthly_pnl.append({
+            'month': month.strftime('%B %Y'),
+            'cars_sold': month_sales.count(),
+            'revenue': month_sales.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
+            'profit': month_sales.aggregate(Sum('profit'))['profit__sum'] or 0,
+        })
+
+    context = {
+        'total_revenue': total_revenue,
+        'total_cost': total_cost,
+        'total_profit': total_profit,
+        'total_commission': total_commission,
+        'profit_margin': round((total_profit / total_revenue * 100), 2) if total_revenue > 0 else 0,
+        'monthly_pnl': monthly_pnl,
+        'best_selling': Car.objects.filter(status='sold').annotate(
+            sale_count=Count('sale')).order_by('-sale_count')[:5],
+        'slow_moving': Car.objects.filter(
+            status='available',
+            entry_date__lte=today - timedelta(days=30)
+        ).order_by('entry_date'),
+    }
+    return render(request, 'reports/pnl.html', context)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 DJANGO FORMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+--- apps/inventory/forms.py ---
+class CarForm(forms.ModelForm):
+    class Meta:
+        model = Car
+        fields = ['name','model_year','color','registration_no',
+                  'purchase_price','selling_price','status','image','notes']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control bg-dark text-light border-secondary', 'placeholder': 'e.g. Toyota Corolla'}),
+            'model_year': forms.NumberInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'color': forms.TextInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'registration_no': forms.TextInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'purchase_price': forms.NumberInput(attrs={'class': 'form-control bg-dark text-light border-secondary', 'placeholder': 'Rs.'}),
+            'selling_price': forms.NumberInput(attrs={'class': 'form-control bg-dark text-light border-secondary', 'placeholder': 'Rs.'}),
+            'status': forms.Select(attrs={'class': 'form-select bg-dark text-light border-secondary'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control bg-dark text-light border-secondary', 'rows': 3}),
+        }
+
+--- apps/sales/forms.py ---
+class SaleForm(forms.ModelForm):
+    class Meta:
+        model = Sale
+        fields = ['car','customer','payment_type','total_amount',
+                  'down_payment','monthly_installment','installment_months']
+        widgets = {
+            'car': forms.Select(attrs={'class': 'form-select bg-dark text-light border-secondary'}),
+            'customer': forms.Select(attrs={'class': 'form-select bg-dark text-light border-secondary'}),
+            'payment_type': forms.Select(attrs={'class': 'form-select bg-dark text-light border-secondary'}),
+            'total_amount': forms.NumberInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'down_payment': forms.NumberInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'monthly_installment': forms.NumberInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'installment_months': forms.NumberInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+        }
+
+--- apps/customers/forms.py ---
+class CustomerForm(forms.ModelForm):
+    class Meta:
+        model = Customer
+        fields = ['name','cnic','phone','address','city']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'cnic': forms.TextInput(attrs={'class': 'form-control bg-dark text-light border-secondary', 'placeholder': '12345-1234567-1'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control bg-dark text-light border-secondary', 'placeholder': '03XX-XXXXXXX'}),
+            'address': forms.Textarea(attrs={'class': 'form-control bg-dark text-light border-secondary', 'rows': 2}),
+            'city': forms.TextInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+        }
+
+--- apps/leads/forms.py ---
+class LeadForm(forms.ModelForm):
+    class Meta:
+        model = Lead
+        fields = ['name','phone','source','interested_car','budget','status','notes','next_followup','test_drive_date']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'source': forms.Select(attrs={'class': 'form-select bg-dark text-light border-secondary'}),
+            'interested_car': forms.TextInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'budget': forms.NumberInput(attrs={'class': 'form-control bg-dark text-light border-secondary'}),
+            'status': forms.Select(attrs={'class': 'form-select bg-dark text-light border-secondary'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control bg-dark text-light border-secondary', 'rows': 3}),
+            'next_followup': forms.DateInput(attrs={'class': 'form-control bg-dark text-light border-secondary', 'type': 'date'}),
+            'test_drive_date': forms.DateTimeInput(attrs={'class': 'form-control bg-dark text-light border-secondary', 'type': 'datetime-local'}),
+        }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 BASE TEMPLATE (templates/base.html)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Build a full-page dark dashboard layout with:
+
+1. LEFT SIDEBAR (fixed, 260px wide):
+   - Top: Logo "🚗 AutoDesk Pro" in amber
+   - Navigation links with Bootstrap icons:
+     * Dashboard → /dashboard/
+     * Inventory → /inventory/
+     * Sales → /sales/
+     * Purchases → /purchases/
+     * Customers → /customers/
+     * Installments → /installments/
+     * Leads → /leads/
+     * Staff → /staff/
+     * Reports → /reports/
+   - Active link highlighted with amber background
+   - Bottom: Logged-in user name + role badge + Logout button
+
+2. TOP NAVBAR (fixed, spans main content area):
+   - Page title (from block)
+   - Notification bell with overdue installments count badge
+   - Current date/time (Pakistan time)
+   - User avatar initials circle
+
+3. MAIN CONTENT AREA:
+   - Scrollable, padding 24px
+   - {% block content %}{% endblock %}
+
+4. TOAST NOTIFICATION AREA:
+   - Fixed bottom-right
+   - Display Django messages as Bootstrap toasts
+   - Auto-dismiss after 4 seconds
+
+HTML structure:
+```html
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AutoDesk Pro{% endblock %}</title>
+  <!-- Bootstrap 5 CSS CDN -->
+  <!-- Bootstrap Icons CDN -->
+  <!-- Tailwind CSS CDN (Play CDN for development) -->
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+</head>
+<body class="bg-[#0A0B0F] text-slate-100">
+  <!-- Sidebar -->
+  <!-- Main wrapper -->
+    <!-- Top navbar -->
+    <!-- Content -->
+    <!-- Toast area -->
+  <!-- Bootstrap JS CDN -->
+  <!-- Custom JS -->
+</body>
+</html>
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 ALL TEMPLATES — DETAILED SPECIFICATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+--- templates/dashboard/dashboard.html ---
+
+Row 1: 6 KPI stat cards using Bootstrap col-md-2:
+Each card: dark bg #13151C, amber left border 3px, icon top-right, big number, label below
+- 🚗 Total Available Cars → {{ total_cars_available }}
+- 📦 Sold This Month → {{ sold_this_month }}
+- ⚠️ Pending Installments → {{ pending_installments }} (red if overdue_installments > 0)
+- 💰 Monthly Revenue → Rs. {{ monthly_revenue|floatformat:0|intcomma }}
+- 📈 Monthly Profit → Rs. {{ monthly_profit|floatformat:0|intcomma }} (green)
+- 🎯 New Leads → {{ new_leads }}
+
+Row 2: Two charts side by side using Chart.js (CDN):
+- Left (col-md-8): Bar chart — last 6 months sales revenue
+  Data from {{ monthly_sales_chart|safe }} passed as JSON
+- Right (col-md-4): Doughnut chart — car status breakdown
+  Labels: Available, Sold, Reserved, Under Repair
+
+Row 3: Recent Sales table (col-md-8) + Quick Actions (col-md-4)
+Table columns: Invoice# | Customer | Car | Amount | Type | Date | Status
+Quick Actions: "New Sale", "Add Car", "Add Lead", "Add Customer" — amber buttons
+
+--- templates/inventory/list.html ---
+
+Top bar: Search input + Status filter dropdown + "Add Car" button (amber)
+
+Stats bar: Available | Reserved | Sold | Under Repair counts
+
+Car cards grid (Bootstrap row, col-md-4):
+Each card (dark bg, border):
+- Car image (or placeholder icon if no image)
+- Car name + year (bold, large)
+- Registration number (muted)
+- Color badge
+- Purchase Price vs Selling Price
+- Profit margin (green badge showing Rs. X profit)
+- Days in stock (amber if >15 days, red if >30 days)
+- Status badge (green=available, amber=reserved, red=sold, blue=under repair)
+- Action buttons: [View Detail] [Edit] [Delete]
+
+--- templates/inventory/detail.html ---
+
+Two-column layout:
+Left: Car image (large) + gallery thumbnails
+Right: All car details in a clean table
+  - Name, Year, Color, Registration No
+  - Purchase Price, Selling Price, Profit
+  - Status badge
+  - Days in stock
+  - Entry Date
+  - Notes
+  
+Below: Purchase info section (if exists) + Sale info (if sold)
+
+--- templates/sales/new_sale.html ---
+
+Multi-step form using Bootstrap tabs (3 steps):
+
+Step 1 - Select Car:
+  Dropdown of available cars
+  On selection: AJAX call to fetch car details
+  Show: Car name, purchase price, suggested selling price
+
+Step 2 - Customer:
+  Toggle: "Existing Customer" / "New Customer"
+  Existing: searchable dropdown
+  New: inline CustomerForm fields
+
+Step 3 - Payment:
+  Payment type toggle (Cash / Installment)
+  Cash: just confirm total amount
+  Installment:
+    - Down Payment field
+    - Monthly Installment field
+    - Number of Months field
+    - Live preview table showing all installment dates and amounts
+    - Auto-calculate: Total = Down + (Monthly × Months)
+
+Summary panel (sticky right column):
+  Car: [name]
+  Purchase Cost: Rs. X
+  Selling Price: Rs. X
+  Estimated Profit: Rs. X (live update)
+  Payment Type: [type]
+  Submit button: "Confirm Sale"
+
+--- templates/sales/invoice.html ---
+
+Printable invoice layout (A4 style):
+
+Header:
+  Left: Dealership name "AutoDesk Pro" + address + phone
+  Right: INVOICE #{{ sale.invoice_no }} + Date
+
+Customer box:
+  Bill To: Customer name, CNIC, phone, address
+
+Car details table:
+  | Description | Year | Registration | Amount |
+
+Payment details:
+  Payment Type: Cash / Installment
+  If installment: Down Payment + Monthly Plan table
+
+Installment schedule table (if installment):
+  | # | Due Date | Amount | Status |
+
+Total box (right-aligned):
+  Subtotal / Profit / Total Amount
+
+Footer: "Thank you for your business" + print button
+
+--- templates/installments/list.html ---
+
+Top 4 summary cards:
+- Expected This Month: Rs. X
+- Collected: Rs. X (green)
+- Pending: Rs. X (amber)
+- Overdue: Rs. X (red)
+
+Filter tabs: All | Due This Month | Overdue | Paid
+
+Table columns:
+Customer | Car | Installment # | Due Date | Amount | Days Overdue | Status | Action
+
+Status badges: green (paid), amber (pending), red (overdue)
+"Mark Paid" button on each non-paid row (POST form)
+Days overdue shown in red for overdue rows
+
+--- templates/leads/list.html ---
+
+Stats bar: Total Leads | New | Follow-up Due Today | Conversion Rate %
+
+Kanban-style board using Bootstrap columns:
+5 columns (horizontal scroll on mobile):
+New | Follow-up | Test Drive | Negotiating | Converted
+
+Each lead card:
+  Name (bold) + Phone
+  Interested: [car name]
+  Budget: Rs. X
+  Source badge (different color per source)
+  Created date
+
+Click card → opens Bootstrap modal with full lead details + status change form
+
+"Add Lead" button → modal form
+
+--- templates/reports/pnl.html ---
+
+Top summary cards (6):
+Total Revenue | Total Cost | Gross Profit | Commission | Net Profit | Margin %
+
+Monthly P&L table:
+Month | Cars Sold | Revenue | Cost | Profit | Margin %
+
+Chart.js Bar chart: Monthly profit bars (last 6 months)
+
+Best-selling cars table: Car name | Units Sold | Revenue
+
+Slow-moving inventory table (red highlight): Car | Days in Stock | Purchase Price
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 CUSTOM CSS (static/css/custom.css)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Write complete CSS for:
+- Body: background #0A0B0F
+- Sidebar: background #0D0E14, border-right 1px solid #1E2130, width 260px fixed
+- Sidebar nav links: color #94A3B8, hover background #1E2130, active background #F59E0B20 with amber left border
+- Cards: background #13151C, border 1px solid #1E2130, border-radius 12px
+- KPI stat cards: amber left-border 3px, padding 20px
+- Tables: dark striped, tr hover #1E2130
+- Badges: custom colors for each car status
+- Form controls dark override
+- Toast notifications fixed bottom-right
+- Invoice print styles (@media print: hide sidebar/navbar, show full width)
+- Scrollbar: thin dark custom scrollbar
+- Profit green: #10B981, Loss red: #EF4444
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ CUSTOM JS (static/js/main.js)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Write JavaScript for:
+
+1. PKR formatter function:
+   formatPKR(amount) → "Rs. 4,500,000"
+
+2. Installment calculator (on new_sale.html):
+   - Watch: down_payment, monthly_installment, installment_months inputs
+   - Auto-update: total amount, profit estimate, installment preview table
+   - Generate installment dates dynamically
+
+3. Car detail AJAX (on new_sale.html):
+   - On car select: fetch /inventory/{id}/json/
+   - Populate purchase price, suggest selling price
+   - Update profit preview
+
+4. Dashboard charts (Chart.js, loaded from CDN):
+   - Monthly revenue bar chart (data from Django template variable)
+   - Car status doughnut chart
+   - Colors matching the dark theme
+
+5. Auto-dismiss toasts (Bootstrap):
+   document.querySelectorAll('.toast').forEach(el => {
+     new bootstrap.Toast(el, {delay: 4000}).show()
+   })
+
+6. Confirm delete dialogs
+
+7. Print invoice button:
+   window.print()
+
+8. Real-time clock in navbar (Pakistan Standard Time UTC+5):
+   Update every second
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔐 AUTHENTICATION & PERMISSIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- All views decorated with @login_required
+- Login page: templates/registration/login.html (dark theme, centered card, logo)
+- After login redirect to /dashboard/
+- Role-based access using StaffProfile.role:
+  * Admin: access everything
+  * Manager: no staff management
+  * Salesman: only inventory, sales, customers, leads
+  * Accountant: only installments, reports, P&L
+
+Implement permission mixin:
+class RoleRequiredMixin:
+    required_roles = []
+    def dispatch(self, request, *args, **kwargs):
+        if hasattr(request.user, 'staffprofile'):
+            if request.user.staffprofile.role in self.required_roles or 'admin' in self.required_roles:
+                return super().dispatch(request, *args, **kwargs)
+        return redirect('dashboard')
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 MANAGEMENT COMMAND — SEED DATA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create: apps/dashboard/management/commands/seed_data.py
+
+This command (python manage.py seed_data) creates:
+
+Admin user: username=admin, password=admin123, role=admin
+
+12 Cars with realistic Pakistani market prices:
+  Toyota Corolla 2022: purchase=4,200,000 selling=4,600,000 (available)
+  Honda Civic 2023: purchase=5,800,000 selling=6,200,000 (available)
+  Suzuki Alto 2021: purchase=1,600,000 selling=1,850,000 (sold)
+  Toyota Fortuner 2022: purchase=9,500,000 selling=10,200,000 (available)
+  Honda BRV 2023: purchase=4,100,000 selling=4,500,000 (reserved)
+  Suzuki Swift 2022: purchase=2,800,000 selling=3,100,000 (sold)
+  KIA Sportage 2023: purchase=6,200,000 selling=6,800,000 (available)
+  Toyota Yaris 2022: purchase=2,900,000 selling=3,200,000 (available)
+  Chery Tiggo 4 2023: purchase=3,800,000 selling=4,100,000 (under_repair)
+  MG HS 2023: purchase=7,200,000 selling=7,800,000 (available)
+  Honda City 2022: purchase=3,200,000 selling=3,550,000 (sold)
+  Suzuki Cultus 2021: purchase=1,900,000 selling=2,150,000 (available)
+
+6 Customers with Karachi/Lahore/Islamabad addresses
+
+4 Sales (2 cash, 2 installment) with linked installments
+
+8 Leads across all pipeline stages
+
+4 Staff members (1 per role)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ SETUP INSTRUCTIONS (include in README.md)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+pip install django pillow
+python manage.py makemigrations
+python manage.py migrate
+python manage.py seed_data
+python manage.py runserver
+
+Login: admin / admin123
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ ABSOLUTE RULES — DO NOT VIOLATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. ONLY use: HTML, CSS, Bootstrap 5, Tailwind CSS, Python, Django
+2. NO React, Vue, Angular, jQuery, or any JS framework
+3. NO Django REST Framework — standard Django views and templates only
+4. NO external databases — SQLite only
+5. NO celery, redis, or background tasks
+6. ALL forms use Django's CSRF token {% csrf_token %}
+7. ALL prices displayed in Pakistani Rupees (Rs.)
+8. ALL views protected with @login_required
+9. DO NOT truncate any file — write every file completely
+10. DO NOT use placeholder comments like "# add logic here"
+11. Build EVERY template — no template should be missing
+12. Chart.js loaded from CDN only (no npm)
+13. Bootstrap 5 loaded from CDN only (no npm)
+14. Tailwind CSS loaded from CDN Play CDN only
+
+Build the ENTIRE system. Every model, every view, every URL, every template,
+every form, every CSS rule, every JS function. This is a production system
+for a real Pakistani car dealership. Make it complete, functional, and beautiful.

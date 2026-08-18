@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Dashboard — Junaid Motors{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- KPI Row -->
+<div class="row g-3 mb-4 align-items-stretch">
+  <div class="col-xl-2 col-md-4 col-6 d-flex">
+    <div class="stat-card w-100">
+      <div class="stat-icon"><i class="bi bi-car-front"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ total_cars_available }}</div>
+        <div class="stat-label">Available Cars</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-md-4 col-6 d-flex">
+    <div class="stat-card w-100">
+      <div class="stat-icon"><i class="bi bi-bag-check"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ sold_this_month }}</div>
+        <div class="stat-label">Sold This Month</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-md-4 col-6 d-flex">
+    <div class="stat-card w-100 {% if overdue_installments > 0 %}danger{% endif %}">
+      <div class="stat-icon"><i class="bi bi-calendar-exclamation"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ pending_installments }}</div>
+        <div class="stat-label">Pending Installments</div>
+      </div>
+      {% if overdue_installments > 0 %}<div class="stat-subtext text-danger"><i class="bi bi-exclamation-triangle me-1"></i>{{ overdue_installments }} overdue</div>{% endif %}
+    </div>
+  </div>
+  <div class="col-xl-2 col-md-4 col-6 d-flex">
+    <div class="stat-card w-100">
+      <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+      <div class="stat-content">
+        <div class="stat-value text-amount">Rs.{{ monthly_revenue|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Monthly Revenue</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-md-4 col-6 d-flex">
+    <div class="stat-card w-100 success">
+      <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="stat-content">
+        <div class="stat-value text-amount">Rs.{{ monthly_profit|floatformat:0|intcomma }}</div>
+        <div class="stat-label">Monthly Profit</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-md-4 col-6 d-flex">
+    <div class="stat-card w-100 info">
+      <div class="stat-icon"><i class="bi bi-funnel"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ new_leads }}</div>
+        <div class="stat-label">New Leads</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.low-stock-banner {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(245, 158, 11, 0.12) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-left: 5px solid #EF4444;
+  border-radius: 12px;
+  padding: 14px 20px;
+  color: #B91C1C;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.low-stock-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.18);
+  border-color: #EF4444;
+}
+
+.warning-pulse-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #DC2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse-warn 2s infinite;
+}
+
+@keyframes pulse-warn {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.btn-add-cars {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: #FFFFFF !important;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 8px 18px;
+  border-radius: 8px;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.25s ease-in-out;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-add-cars:hover {
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  color: #FFFFFF !important;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.45);
+}
+
+.btn-add-cars .transition-icon {
+  transition: transform 0.25s ease;
+}
+
+.btn-add-cars:hover .transition-icon {
+  transform: translateX(4px);
+}
+</style>
+
+{% if low_stock_warning %}
+<div class="alert mb-4 low-stock-banner d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-3">
+    <div class="warning-pulse-icon">
+      <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    </div>
+    <div>
+      <span class="fw-bold fs-6" style="color:#991B1B;">Low Stock Warning:</span>
+      <span class="ms-1" style="color:#374151;">Only <span class="badge bg-danger text-white fs-6 mx-1 px-2 py-1 fw-bold">{{ total_cars_available }}</span> car(s) available in inventory.</span>
+    </div>
+  </div>
+  <a href="{% url 'add_car' %}" class="btn-add-cars">
+    Add cars <i class="bi bi-arrow-right ms-2 transition-icon"></i>
+  </a>
+</div>
+{% endif %}
+
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-bar-chart-line me-2 text-amber"></i>Monthly Revenue (Last 6 Months)</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-container" style="height:240px;">
+          <canvas id="revenueChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-pie-chart me-2 text-amber"></i>Car Status Breakdown
+      </div>
+      <div class="card-body">
+        <div class="chart-container" style="height:240px;">
+          <canvas id="statusChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Sales + Quick Actions -->
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-receipt me-2 text-amber"></i>Recent Sales</span>
+        <a href="{% url 'sales_list' %}" class="btn-outline-amber" style="font-size:0.78rem;padding:4px 10px;">View All</a>
+      </div>
+      <div class="card-body p-0">
+        {% if recent_sales %}
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Invoice</th>
+                <th>Customer</th>
+                <th>Car</th>
+                <th>Amount</th>
+                <th>Type</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sale in recent_sales %}
+              <tr>
+                <td><a href="{% url 'sale_detail' sale.pk %}" class="text-amber text-decoration-none fw-bold">{{ sale.invoice_no }}</a></td>
+                <td>{{ sale.customer.name }}</td>
+                <td>{{ sale.car.name }} <span style="color:var(--text-muted);font-size:0.78rem;">({{ sale.car.model_year }})</span></td>
+                <td class="text-profit fw-bold">Rs.{{ sale.total_amount|floatformat:0|intcomma }}</td>
+                <td>
+                  {% if sale.payment_type == 'cash' %}
+                  <span class="badge badge-paid">Cash</span>
+                  {% else %}
+                  <span class="badge badge-pending">Installment</span>
+                  {% endif %}
+                </td>
+                <td style="color:var(--text-muted);">{{ sale.sale_date|date:"d M Y" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><i class="bi bi-receipt"></i><p>No sales yet</p></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-lightning-charge me-2 text-amber"></i>Quick Actions</div>
+      <div class="card-body">
+        <a href="{% url 'new_sale' %}" class="quick-action-btn">
+          <i class="bi bi-plus-circle-fill text-amber"></i> New Sale
+        </a>
+        <a href="{% url 'add_car' %}" class="quick-action-btn">
+          <i class="bi bi-car-front-fill" style="color:#3B82F6;"></i> Add Car
+        </a>
+        <a href="{% url 'add_lead' %}" class="quick-action-btn">
+          <i class="bi bi-person-plus-fill" style="color:#8B5CF6;"></i> Add Lead
+        </a>
+        <a href="{% url 'add_customer' %}" class="quick-action-btn">
+          <i class="bi bi-people-fill" style="color:#10B981;"></i> Add Customer
+        </a>
+        <a href="{% url 'pnl_report' %}" class="quick-action-btn">
+          <i class="bi bi-graph-up-arrow" style="color:#F59E0B;"></i> P&L Report
+        </a>
+      </div>
+    </div>
+
+    <!-- Stats summary -->
+    <div class="card mt-3">
+      <div class="card-header"><i class="bi bi-info-circle me-2 text-amber"></i>Today's Summary</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between py-2" style="border-bottom:1px solid var(--border);">
+          <span style="color:var(--text-muted);font-size:0.85rem;">Sales Today</span>
+          <span class="fw-bold text-amber">{{ today_sales }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-2" style="border-bottom:1px solid var(--border);">
+          <span style="color:var(--text-muted);font-size:0.85rem;">Total Customers</span>
+          <span class="fw-bold">{{ total_customers }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-2">
+          <span style="color:var(--text-muted);font-size:0.85rem;">Slow Moving (>30d)</span>
+          <span class="fw-bold {% if slow_moving_cars > 0 %}text-loss{% endif %}">{{ slow_moving_cars }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const monthlySalesData = {{ monthly_sales_chart|safe }};
+const carsData = {
+  available: {{ cars_available }},
+  sold: {{ cars_sold }},
+  reserved: {{ cars_reserved }},
+  repair: {{ cars_repair }},
+};
+initDashboardCharts(monthlySalesData, carsData);
+</script>
+{% endblock %}

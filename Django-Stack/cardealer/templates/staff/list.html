@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Staff — Junaid Motors{% endblock %}
+{% block page_title %}Staff Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-end mb-4">
+  <a href="{% url 'add_staff' %}" class="btn-amber"><i class="bi bi-person-plus me-1"></i>Add Staff</a>
+</div>
+
+<div class="row g-3">
+  {% for member in staff %}
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body text-center py-4">
+        <div class="avatar-circle mx-auto mb-3" style="width:52px;height:52px;font-size:1.1rem;">{{ member.user.username|upper|slice:":2" }}</div>
+        <h6 class="fw-bold mb-1">{{ member.user.get_full_name|default:member.user.username }}</h6>
+        <span class="badge badge-available mb-2">{{ member.get_role_display }}</span>
+        <div style="font-size:0.82rem;color:var(--text-muted);">{{ member.user.email }}</div>
+        <div style="font-size:0.82rem;color:var(--text-muted);">{{ member.phone }}</div>
+        <div class="mt-2">
+          {% if member.is_active %}<span class="badge badge-paid">Active</span>{% else %}<span class="badge badge-overdue">Inactive</span>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="empty-state"><i class="bi bi-people"></i><p>No staff members found. <a href="{% url 'add_staff' %}" class="text-amber">Add staff</a></p></div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}{{ sale.invoice_no }} — Junaid Motors{% endblock %}
+{% block page_title %}Sale Detail & Installment Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div class="d-flex gap-2">
+    <a href="{% url 'sales_list' %}" class="btn-ghost"><i class="bi bi-arrow-left me-1"></i>Back to Sales</a>
+    <a href="{% url 'installment_list' %}" class="btn-ghost"><i class="bi bi-calendar-check me-1"></i>Installment Tracker</a>
+  </div>
+  <a href="{% url 'sale_invoice' sale.pk %}" class="btn-amber"><i class="bi bi-printer me-1"></i>Print Invoice</a>
+</div>
+
+<div class="row g-3">
+  <!-- Sale Info Card -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-receipt me-2 text-primary"></i>Sale Information</div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <tbody>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;width:40%;">Invoice No.</td><td class="fw-bold text-primary">{{ sale.invoice_no }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Sale Date</td><td>{{ sale.sale_date|date:"d M Y" }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Vehicle</td><td class="fw-bold">{{ sale.car.name }} ({{ sale.car.model_year }})</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Registration No.</td><td><span class="badge bg-light text-dark border">{{ sale.car.registration_no }}</span></td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Customer Name</td><td class="fw-bold">{{ sale.customer.name }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">CNIC & Phone</td><td>{{ sale.customer.cnic }} &bull; {{ sale.customer.phone }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Payment Method</td><td><span class="badge bg-light text-dark border fw-bold">{{ sale.get_payment_method_display }}</span></td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Payment Status</td><td><span class="badge {% if sale.payment_status == 'paid' %}badge-paid{% elif sale.payment_status == 'partially_paid' %}bg-info text-white{% else %}badge-pending{% endif %}">{{ sale.get_payment_status_display }}</span></td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Sale Plan Type</td><td><span class="badge {% if sale.payment_type == 'cash' %}badge-paid{% else %}badge-pending{% endif %}">{{ sale.get_payment_type_display }}</span></td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Total Sale Price</td><td class="fw-bold text-primary">Rs. {{ sale.total_amount|floatformat:0|intcomma }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Payment Received</td><td class="fw-bold text-success">Rs. {{ sale.total_paid_amount|floatformat:0|intcomma }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Remaining Balance</td><td class="fw-bold text-danger">Rs. {{ sale.remaining_balance|floatformat:0|intcomma }}</td></tr>
+            {% if sale.payment_type == 'installment' %}
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Down Payment</td><td>Rs. {{ sale.down_payment|floatformat:0|intcomma }}</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Total Installments</td><td>{{ sale.installment_months }} Months</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Installment Amount</td><td>Rs. {{ sale.monthly_installment|floatformat:0|intcomma }} / month</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Installments Paid</td><td class="text-success fw-bold">{{ sale.installments_paid }} Paid</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Installments Remaining</td><td class="text-warning fw-bold">{{ sale.installments_remaining }} Left</td></tr>
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Next Due Date</td><td class="text-primary fw-bold">{{ sale.next_installment_due_date|date:"d M Y"|default:"All Paid" }}</td></tr>
+            {% endif %}
+            <tr><td style="color:var(--text-muted);font-size:0.85rem;">Estimated Profit</td><td class="text-profit fw-bold">Rs. {{ sale.profit|floatformat:0|intcomma }}</td></tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Installments & Remaining System -->
+  <div class="col-lg-6">
+    {% if sale.payment_type == 'installment' %}
+    <!-- Remaining Balance Box -->
+    <div class="card mb-3" style="border:1px solid #CBD5E1;">
+      <div class="card-header bg-light fw-bold text-dark d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-wallet2 text-primary me-2"></i>Remaining Installment Summary</span>
+        <span class="badge bg-primary">{{ sale.paid_percentage }}% Paid</span>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small fw-bold mb-1">
+            <span>Payment Progress</span>
+            <span class="text-primary">Rs. {{ sale.total_paid_amount|floatformat:0|intcomma }} / Rs. {{ sale.total_amount|floatformat:0|intcomma }}</span>
+          </div>
+          <div class="progress" style="height: 10px; background:#E2E8F0; border-radius:10px;">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ sale.paid_percentage }}%; border-radius:10px;" aria-valuenow="{{ sale.paid_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+
+        <div class="row g-2 text-center">
+          <div class="col-6">
+            <div class="p-2 rounded" style="background:#FFFBEB; border:1px solid #FDE68A;">
+              <div class="text-muted" style="font-size:0.72rem; font-weight:700;">REMAINING BALANCE</div>
+              <div class="fw-bold text-danger fs-5">Rs. {{ sale.remaining_balance|floatformat:0|intcomma }}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-2 rounded" style="background:#EFF6FF; border:1px solid #BFDBFE;">
+              <div class="text-muted" style="font-size:0.72rem; font-weight:700;">REMAINING INSTALLMENTS</div>
+              <div class="fw-bold text-primary fs-5">{{ sale.remaining_installments_count }} Months Left</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if sale.video %}
+    <div class="mb-3">
+      <video controls style="width:100%;border-radius:10px;max-height:240px;object-fit:cover;">
+        <source src="{{ sale.video.url }}" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-calendar-check me-2 text-primary"></i>Installment Schedule</span>
+        <span class="text-muted small">{{ installments|length }} total installment(s)</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table mb-0" style="font-size:0.85rem;">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Due Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Paid Date</th>
+                <th class="text-end">Voucher</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inst in installments %}
+              <tr>
+                <td class="fw-bold">#{{ inst.installment_no }}</td>
+                <td>{{ inst.due_date|date:"d M Y" }}</td>
+                <td class="fw-semibold">Rs.{{ inst.amount|floatformat:0|intcomma }}</td>
+                <td>
+                  <span class="badge badge-{{ inst.status }}">{{ inst.get_status_display }}</span>
+                </td>
+                <td>{{ inst.paid_date|date:"d M Y"|default:"—" }}</td>
+                <td class="text-end">
+                  <a href="{% url 'installment_voucher' inst.pk %}" class="btn-outline-amber" style="padding:2px 8px; font-size:0.75rem;" title="Print Voucher Receipt">
+                    <i class="bi bi-printer me-1"></i>Voucher
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</div>
+{% endblock %}

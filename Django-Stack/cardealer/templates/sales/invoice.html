@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Invoice {{ sale.invoice_no }} — Junaid Motors{% endblock %}
+{% block page_title %}Invoice{% endblock %}
+
+{% block content %}
+<div class="d-flex gap-2 mb-4 no-print">
+  <a href="{% url 'sale_detail' sale.pk %}" class="btn-ghost"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  <button onclick="printInvoice()" class="btn-amber"><i class="bi bi-printer me-1"></i>Print Invoice</button>
+</div>
+
+<div class="card invoice-box" style="max-width:800px;margin:0 auto;">
+  <div class="card-body p-5">
+    <!-- Header -->
+    <div class="row mb-4">
+      <div class="col-6">
+        <h3 style="color:var(--primary);font-weight:900;letter-spacing:-0.5px;">
+          <i class="bi bi-car-front-fill me-2"></i>Junaid Motors
+        </h3>
+        <div style="color:var(--text-muted);font-size:0.85rem;line-height:1.8;">
+          Car Dealership Management<br>
+          123 Main Boulevard, Karachi<br>
+          Phone: +92-300-1234567
+        </div>
+      </div>
+      <div class="col-6 text-end">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--primary);">INVOICE</div>
+        <div class="fw-bold" style="font-size:1.1rem;">{{ sale.invoice_no }}</div>
+        <div style="color:var(--text-muted);font-size:0.85rem;">Date: {{ sale.sale_date|date:"d M Y" }}</div>
+      </div>
+    </div>
+
+    <hr style="border-color:var(--border);">
+
+    <!-- Bill To -->
+    <div class="row mb-4">
+      <div class="col-6">
+        <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Bill To</div>
+        <div class="fw-bold">{{ sale.customer.name }}</div>
+        <div style="font-size:0.85rem;color:var(--text-muted);">CNIC: {{ sale.customer.cnic }}</div>
+        <div style="font-size:0.85rem;color:var(--text-muted);">Phone: {{ sale.customer.phone }}</div>
+        <div style="font-size:0.85rem;color:var(--text-muted);">{{ sale.customer.address }}, {{ sale.customer.city }}</div>
+      </div>
+    </div>
+
+    <!-- Car Details Table -->
+    <div class="table-responsive mb-4">
+      <table class="table" style="font-size:0.875rem;">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Year</th>
+            <th>Registration</th>
+            <th>Color</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="fw-bold">{{ sale.car.name }}</td>
+            <td>{{ sale.car.model_year }}</td>
+            <td>{{ sale.car.registration_no }}</td>
+            <td>{{ sale.car.color }}</td>
+            <td class="text-end fw-bold">Rs.{{ sale.total_amount|floatformat:0|intcomma }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Payment Details -->
+    <div class="row mb-4">
+      <div class="col-6">
+        <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Payment Details</div>
+        <div style="font-size:0.875rem;">
+          <span style="color:var(--text-muted);">Type:</span> <strong>{{ sale.get_payment_type_display }}</strong>
+        </div>
+        {% if sale.payment_type == 'installment' %}
+        <div style="font-size:0.875rem;margin-top:4px;">
+          <span style="color:var(--text-muted);">Down Payment:</span> <strong>Rs.{{ sale.down_payment|floatformat:0|intcomma }}</strong>
+        </div>
+        <div style="font-size:0.875rem;margin-top:4px;">
+          <span style="color:var(--text-muted);">Monthly:</span> <strong>Rs.{{ sale.monthly_installment|floatformat:0|intcomma }} × {{ sale.installment_months }} months</strong>
+        </div>
+        {% endif %}
+      </div>
+      <div class="col-6">
+        <div class="text-end" style="border:1px solid var(--border);border-radius:8px;padding:16px;background:var(--bg);">
+          <div class="d-flex justify-content-between mb-2">
+            <span style="color:var(--text-muted);font-size:0.85rem;">Total Amount</span>
+            <span class="fw-bold">Rs.{{ sale.total_amount|floatformat:0|intcomma }}</span>
+          </div>
+          <hr style="border-color:var(--border);margin:8px 0;">
+          <div class="d-flex justify-content-between">
+            <span class="fw-bold">Grand Total</span>
+            <span class="fw-bold" style="font-size:1.1rem;color:var(--primary);">Rs.{{ sale.total_amount|floatformat:0|intcomma }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if installments %}
+    <!-- Installment Schedule -->
+    <div class="mb-4">
+      <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Installment Schedule</div>
+      <table class="table" style="font-size:0.82rem;">
+        <thead>
+          <tr><th>#</th><th>Due Date</th><th>Amount</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for inst in installments %}
+          <tr>
+            <td>{{ inst.installment_no }}</td>
+            <td>{{ inst.due_date|date:"d M Y" }}</td>
+            <td>Rs.{{ inst.amount|floatformat:0|intcomma }}</td>
+            <td><span class="badge badge-{{ inst.status }}">{{ inst.get_status_display }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <hr style="border-color:var(--border);">
+    <div class="text-center py-3">
+      <div style="color:var(--text-muted);font-size:0.85rem;">Thank you for your business!</div>
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Junaid Motors — Your trusted car dealership partner</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Leads — Junaid Motors{% endblock %}
+{% block page_title %}Lead Pipeline{% endblock %}
+
+{% block content %}
+<!-- Stats Bar -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="stat-card"><div class="stat-value">{{ stats.total }}</div><div class="stat-label">Total Leads</div></div></div>
+  <div class="col-md-3"><div class="stat-card info"><div class="stat-value">{{ stats.new }}</div><div class="stat-label">New Leads</div></div></div>
+  <div class="col-md-3"><div class="stat-card"><div class="stat-value">{{ stats.followup_today }}</div><div class="stat-label">Follow-up Today</div></div></div>
+  <div class="col-md-3"><div class="stat-card success"><div class="stat-value">{{ stats.conversion_rate }}%</div><div class="stat-label">Conversion Rate</div></div></div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div style="font-size:0.85rem;color:var(--text-muted);">Click any card to update lead status</div>
+  <button class="btn-amber" data-bs-toggle="modal" data-bs-target="#addLeadModal">
+    <i class="bi bi-plus-lg me-1"></i>Add Lead
+  </button>
+</div>
+
+<!-- Kanban Board -->
+<div class="kanban-board">
+
+  <!-- New -->
+  <div class="kanban-col">
+    <div class="kanban-col-header"><span>New</span><span class="kanban-count">{{ kanban.new|length }}</span></div>
+    {% for lead in kanban.new %}
+    <div class="lead-card" data-bs-toggle="modal" data-bs-target="#leadModal{{ lead.pk }}">
+      <div class="lead-name">{{ lead.name }}</div>
+      <div class="lead-car"><i class="bi bi-car-front me-1"></i>{{ lead.interested_car }}</div>
+      {% if lead.budget %}<div style="font-size:0.75rem;color:var(--primary);margin-top:4px;">Rs.{{ lead.budget|floatformat:0|intcomma }}</div>{% endif %}
+      <div class="mt-2 d-flex gap-1 flex-wrap">
+        <span class="badge badge-{{ lead.source }}">{{ lead.get_source_display }}</span>
+        <span style="font-size:0.68rem;color:var(--text-muted);">{{ lead.created_at|timesince }} ago</span>
+      </div>
+    </div>
+    {% include 'leads/_lead_modal.html' %}
+    {% empty %}
+    <div class="empty-state" style="padding:20px 10px;"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p style="font-size:0.78rem;">Empty</p></div>
+    {% endfor %}
+  </div>
+
+  <!-- Follow-up -->
+  <div class="kanban-col">
+    <div class="kanban-col-header"><span>Follow-up</span><span class="kanban-count">{{ kanban.followup|length }}</span></div>
+    {% for lead in kanban.followup %}
+    <div class="lead-card" data-bs-toggle="modal" data-bs-target="#leadModal{{ lead.pk }}">
+      <div class="lead-name">{{ lead.name }}</div>
+      <div class="lead-car"><i class="bi bi-car-front me-1"></i>{{ lead.interested_car }}</div>
+      {% if lead.budget %}<div style="font-size:0.75rem;color:var(--primary);margin-top:4px;">Rs.{{ lead.budget|floatformat:0|intcomma }}</div>{% endif %}
+      <div class="mt-2 d-flex gap-1 flex-wrap">
+        <span class="badge badge-{{ lead.source }}">{{ lead.get_source_display }}</span>
+        {% if lead.next_followup %}<span style="font-size:0.68rem;color:var(--warning);">{{ lead.next_followup|date:"d M" }}</span>{% endif %}
+      </div>
+    </div>
+    {% include 'leads/_lead_modal.html' %}
+    {% empty %}
+    <div class="empty-state" style="padding:20px 10px;"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p style="font-size:0.78rem;">Empty</p></div>
+    {% endfor %}
+  </div>
+
+  <!-- Test Drive -->
+  <div class="kanban-col">
+    <div class="kanban-col-header"><span>Test Drive</span><span class="kanban-count">{{ kanban.testdrive|length }}</span></div>
+    {% for lead in kanban.testdrive %}
+    <div class="lead-card" data-bs-toggle="modal" data-bs-target="#leadModal{{ lead.pk }}">
+      <div class="lead-name">{{ lead.name }}</div>
+      <div class="lead-car"><i class="bi bi-car-front me-1"></i>{{ lead.interested_car }}</div>
+      {% if lead.budget %}<div style="font-size:0.75rem;color:var(--primary);margin-top:4px;">Rs.{{ lead.budget|floatformat:0|intcomma }}</div>{% endif %}
+      <div class="mt-2"><span class="badge badge-{{ lead.source }}">{{ lead.get_source_display }}</span></div>
+    </div>
+    {% include 'leads/_lead_modal.html' %}
+    {% empty %}
+    <div class="empty-state" style="padding:20px 10px;"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p style="font-size:0.78rem;">Empty</p></div>
+    {% endfor %}
+  </div>
+
+  <!-- Negotiating -->
+  <div class="kanban-col">
+    <div class="kanban-col-header"><span>Negotiating</span><span class="kanban-count">{{ kanban.negotiating|length }}</span></div>
+    {% for lead in kanban.negotiating %}
+    <div class="lead-card" data-bs-toggle="modal" data-bs-target="#leadModal{{ lead.pk }}">
+      <div class="lead-name">{{ lead.name }}</div>
+      <div class="lead-car"><i class="bi bi-car-front me-1"></i>{{ lead.interested_car }}</div>
+      {% if lead.budget %}<div style="font-size:0.75rem;color:var(--primary);margin-top:4px;">Rs.{{ lead.budget|floatformat:0|intcomma }}</div>{% endif %}
+      <div class="mt-2"><span class="badge badge-{{ lead.source }}">{{ lead.get_source_display }}</span></div>
+    </div>
+    {% include 'leads/_lead_modal.html' %}
+    {% empty %}
+    <div class="empty-state" style="padding:20px 10px;"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p style="font-size:0.78rem;">Empty</p></div>
+    {% endfor %}
+  </div>
+
+  <!-- Converted -->
+  <div class="kanban-col" style="border-color:rgba(16,185,129,0.3);">
+    <div class="kanban-col-header" style="color:var(--success);"><span>Converted</span><span class="kanban-count">{{ kanban.converted|length }}</span></div>
+    {% for lead in kanban.converted %}
+    <div class="lead-card" style="border-color:rgba(16,185,129,0.2);" data-bs-toggle="modal" data-bs-target="#leadModal{{ lead.pk }}">
+      <div class="lead-name">{{ lead.name }}</div>
+      <div class="lead-car"><i class="bi bi-car-front me-1"></i>{{ lead.interested_car }}</div>
+      <div class="mt-2"><span class="badge badge-paid">Converted</span></div>
+    </div>
+    {% include 'leads/_lead_modal.html' %}
+    {% empty %}
+    <div class="empty-state" style="padding:20px 10px;"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p style="font-size:0.78rem;">Empty</p></div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<!-- Add Lead Modal -->
+<div class="modal fade" id="addLeadModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background:var(--card);border:1px solid var(--border);">
+      <div class="modal-header" style="border-color:var(--border);">
+        <h5 class="modal-title"><i class="bi bi-funnel me-2 text-amber"></i>Add New Lead</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{% url 'add_lead' %}">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">Name</label>{{ form.name }}</div>
+            <div class="col-md-6"><label class="form-label">Phone</label>{{ form.phone }}</div>
+            <div class="col-md-6"><label class="form-label">Source</label>{{ form.source }}</div>
+            <div class="col-md-6"><label class="form-label">Interested In</label>{{ form.interested_car }}</div>
+            <div class="col-md-6"><label class="form-label">Budget (Rs.)</label>{{ form.budget }}</div>
+            <div class="col-md-6"><label class="form-label">Status</label>{{ form.status }}</div>
+            <div class="col-md-6"><label class="form-label">Next Follow-up</label>{{ form.next_followup }}</div>
+            <div class="col-12"><label class="form-label">Notes</label>{{ form.notes }}</div>
+          </div>
+          <button type="submit" class="btn-amber mt-3"><i class="bi bi-plus me-1"></i>Add Lead</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

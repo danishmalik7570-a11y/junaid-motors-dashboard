@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Junaid Motors{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <a href="{% url 'repair_list' %}" class="btn-ghost fw-bold"><i class="bi bi-arrow-left me-1"></i>Back to Repair Records</a>
+    </div>
+
+    <div class="card shadow-sm border-0" style="border:1px solid #CBD5E1 !important;">
+      <div class="card-header bg-primary text-white py-3">
+        <h4 class="mb-0 fw-extra-bold"><i class="bi bi-tools me-2 text-white"></i>{{ title }}</h4>
+        <p class="mb-0 text-white-50 fs-7 mt-1">Register vehicle for workshop maintenance, body paint, or mechanic repairs.</p>
+      </div>
+      <div class="card-body p-4">
+        <form method="post" action="">
+          {% csrf_token %}
+          
+          <div class="row g-3">
+            <!-- Select Vehicle -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark fs-7">Select Vehicle *</label>
+              {{ form.car }}
+              {% if form.car.errors %}
+                <div class="text-danger fs-8 fw-bold mt-1">{{ form.car.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Workshop Name -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark fs-7">Workshop / Mechanic Name *</label>
+              {{ form.workshop_name }}
+              {% if form.workshop_name.errors %}
+                <div class="text-danger fs-8 fw-bold mt-1">{{ form.workshop_name.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Work Description -->
+            <div class="col-12">
+              <label class="form-label fw-bold text-dark fs-7">Repair Work Description *</label>
+              {{ form.work_description }}
+              {% if form.work_description.errors %}
+                <div class="text-danger fs-8 fw-bold mt-1">{{ form.work_description.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Estimated Cost -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark fs-7">Estimated Cost (PKR) *</label>
+              {{ form.estimated_cost }}
+              {% if form.estimated_cost.errors %}
+                <div class="text-danger fs-8 fw-bold mt-1">{{ form.estimated_cost.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Status -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark fs-7">Repair Status *</label>
+              {{ form.status }}
+              {% if form.status.errors %}
+                <div class="text-danger fs-8 fw-bold mt-1">{{ form.status.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Start Date -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark fs-7">Repair Start Date *</label>
+              {{ form.start_date }}
+              {% if form.start_date.errors %}
+                <div class="text-danger fs-8 fw-bold mt-1">{{ form.start_date.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Expected Completion Date -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark fs-7">Expected Completion Date</label>
+              {{ form.completion_date }}
+              {% if form.completion_date.errors %}
+                <div class="text-danger fs-8 fw-bold mt-1">{{ form.completion_date.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Notes -->
+            <div class="col-12">
+              <label class="form-label fw-bold text-dark fs-7">Additional Notes</label>
+              {{ form.notes }}
+              {% if form.notes.errors %}
+                <div class="text-danger fs-8 fw-bold mt-1">{{ form.notes.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+            <a href="{% url 'repair_list' %}" class="btn-ghost fw-bold">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4 fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Save Repair Record</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

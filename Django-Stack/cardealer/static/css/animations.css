@@ -1,0 +1,94 @@
+/* ─────────────────────────────────────────────────
+   Showroom Dashboard — Micro-Interactions & Animations
+   File: static/css/animations.css
+   ───────────────────────────────────────────────── */
+
+/* Global Transition Defaults */
+.card,
+.stat-card,
+.inventory-card,
+.lead-card,
+.form-section-card {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+                border-color 0.25s ease;
+}
+
+/* Button Elevate & Scale Effect */
+button,
+.btn,
+.btn-amber,
+.btn-primary,
+.btn-ghost,
+.btn-outline-amber,
+.quick-action-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Notification Bell Ring Animation */
+@keyframes bell-ring {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(14deg); }
+    40% { transform: rotate(-14deg); }
+    60% { transform: rotate(8deg); }
+    80% { transform: rotate(-8deg); }
+}
+
+.notif-btn:hover i {
+    animation: bell-ring 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Pulse Badge Effect for Critical Notifications */
+@keyframes pulse-ring {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+.notif-badge,
+.badge-pulse {
+    animation: pulse-ring 2s infinite;
+}
+
+/* Toast Elevation & Slide Animation */
+.toast {
+    animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Smooth Table Row Transitions */
+.table tbody tr {
+    transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+/* Icon Hover Scale */
+.sidebar-link:hover i,
+.quick-action-btn:hover i,
+.stat-card:hover .stat-icon {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Focus Ring Customization */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid #2563EB !important;
+    outline-offset: 2px !important;
+}

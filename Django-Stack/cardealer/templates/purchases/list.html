@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Purchases — Junaid Motors{% endblock %}
+{% block page_title %}Purchases{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-end mb-4">
+  <a href="{% url 'add_purchase' %}" class="btn-amber"><i class="bi bi-plus-lg me-1"></i>Record Purchase</a>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-cart3 me-2 text-amber"></i>Purchase Records</div>
+  <div class="card-body p-0">
+    {% if purchases %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr><th>Car</th><th>Seller</th><th>Phone</th><th>Purchase Price</th><th>Commission</th><th>Net Cost</th><th>Date</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for p in purchases %}
+          <tr>
+            <td class="fw-bold">{{ p.car.name }} ({{ p.car.model_year }})</td>
+            <td>{{ p.seller_name }}</td>
+            <td>{{ p.seller_phone }}</td>
+            <td>Rs.{{ p.purchase_price|floatformat:0|intcomma }}</td>
+            <td style="color:var(--text-muted);">Rs.{{ p.dealer_commission|floatformat:0|intcomma }}</td>
+            <td class="fw-bold text-amber">Rs.{{ p.net_cost|floatformat:0|intcomma }}</td>
+            <td style="color:var(--text-muted);">{{ p.purchase_date|date:"d M Y" }}</td>
+            <td><a href="{% url 'purchase_detail' p.pk %}" class="btn-ghost" style="padding:4px 8px;font-size:0.78rem;"><i class="bi bi-eye"></i></a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><i class="bi bi-cart3"></i><p>No purchases recorded. <a href="{% url 'add_purchase' %}" class="text-amber">Record first purchase</a></p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

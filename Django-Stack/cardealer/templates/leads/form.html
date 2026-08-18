@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Junaid Motors{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-funnel me-2 text-amber"></i>{{ title }}</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">Name</label>{{ form.name }}</div>
+            <div class="col-md-6"><label class="form-label">Phone</label>{{ form.phone }}</div>
+            <div class="col-md-6"><label class="form-label">Source</label>{{ form.source }}</div>
+            <div class="col-md-6"><label class="form-label">Interested In</label>{{ form.interested_car }}</div>
+            <div class="col-md-6"><label class="form-label">Budget</label>{{ form.budget }}</div>
+            <div class="col-md-6"><label class="form-label">Status</label>{{ form.status }}</div>
+            <div class="col-md-6"><label class="form-label">Next Follow-up</label>{{ form.next_followup }}</div>
+            <div class="col-md-6"><label class="form-label">Test Drive Date</label>{{ form.test_drive_date }}</div>
+            <div class="col-12"><label class="form-label">Notes</label>{{ form.notes }}</div>
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn-amber"><i class="bi bi-check-lg me-1"></i>Save Lead</button>
+            <a href="{% url 'lead_list' %}" class="btn-ghost"><i class="bi bi-x-lg me-1"></i>Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

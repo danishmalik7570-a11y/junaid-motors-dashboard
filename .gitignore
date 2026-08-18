@@ -1,0 +1,37 @@
+# Python Virtual Environments
+.venv/
+venv/
+Django-Stack/venv/
+Django-Stack/cardealer/venv/
+
+# Python compiled files
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Workspace / Agent specific files
+.kiro/
+.agents/
+.replit
+.replitignore
+.cache/
+.local/
+
+# IDE files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Node modules (if any)
+node_modules/
+**/node_modules/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+Desktop.ini

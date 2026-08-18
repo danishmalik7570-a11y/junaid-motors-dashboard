@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Junaid Motors{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-badge me-2 text-amber"></i>{{ title }}</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">First Name</label>{{ form.first_name }}</div>
+            <div class="col-md-6"><label class="form-label">Last Name</label>{{ form.last_name }}</div>
+            <div class="col-md-6"><label class="form-label">Username</label>{{ form.username }}</div>
+            <div class="col-md-6"><label class="form-label">Email</label>{{ form.email }}</div>
+            <div class="col-md-6"><label class="form-label">Password</label>{{ form.password }}</div>
+            <div class="col-md-6"><label class="form-label">Phone</label>{{ form.phone }}</div>
+            <div class="col-md-6"><label class="form-label">Role</label>{{ form.role }}</div>
+            <div class="col-md-6"><label class="form-label">Active</label><div class="mt-2">{{ form.is_active }}</div></div>
+          </div>
+          {% if form.errors %}
+          <div class="alert alert-danger mt-3" style="background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#EF4444;font-size:0.875rem;">
+            {% for field in form %}{% for error in field.errors %}<div>{{ field.label }}: {{ error }}</div>{% endfor %}{% endfor %}
+          </div>
+          {% endif %}
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn-amber"><i class="bi bi-check-lg me-1"></i>Save Staff</button>
+            <a href="{% url 'staff_list' %}" class="btn-ghost"><i class="bi bi-x-lg me-1"></i>Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
